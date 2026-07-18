@@ -434,7 +434,7 @@ Adil: You stop falling in love with their potential and start accepting their re
   <!-- STEP 6: PROJECTS (persisted history — every slide you've downloaded) -->
   <section class="panel step-panel" id="panel-6" style="display:none;">
     <h2>Projects</h2>
-    <p class="sub">Every batch you've exported as a ZIP, grouped together with its title, saved automatically on this computer/browser. Click any slide to enlarge it. Delete anything you don't need anymore.</p>
+    <p class="sub">Every batch you've exported as a ZIP, grouped together with its title. <strong>Shared:</strong> visible to anyone who opens this artifact, not just you — deleting here removes it for everyone too. Click any slide to enlarge it.</p>
     <div class="footer-actions">
       <button id="clearHistoryBtn">Clear all</button>
     </div>
@@ -602,27 +602,28 @@ async function idbDelete(key){
   });
 }
 
-async function storageGet(key){
+async function storageGet(key, shared=false){
   if(hasClaudeStorage){
     try{
-      const r = await window.storage.get(key, false);
+      const r = await window.storage.get(key, shared);
       return r ? r.value : null;
     } catch(e){ return null; }
   }
+  // IndexedDB is local to this browser only — there is no real "shared" fallback outside claude.ai
   try{ return await idbGet(key); } catch(e){ return null; }
 }
-async function storageSet(key, value){
+async function storageSet(key, value, shared=false){
   if(hasClaudeStorage){
     try{
-      const r = await window.storage.set(key, value, false);
+      const r = await window.storage.set(key, value, shared);
       return !!r;
     } catch(e){ console.warn('storageSet failed', key, e); return false; }
   }
   try{ return await idbSet(key, value); } catch(e){ console.warn('storageSet failed', key, e); return false; }
 }
-async function storageDelete(key){
+async function storageDelete(key, shared=false){
   if(hasClaudeStorage){
-    try{ await window.storage.delete(key, false); return true; } catch(e){ return false; }
+    try{ await window.storage.delete(key, shared); return true; } catch(e){ return false; }
   }
   try{ return await idbDelete(key); } catch(e){ return false; }
 }
@@ -738,7 +739,7 @@ function buildCopyOptions(currentIdx, currentHalf){
       const half = s[h];
       if(!half || !half.frameDataURL) return;
       if(sIdx === currentIdx && h === currentHalf) return;
-      opts += `<option value="${sIdx}|${h}">Slide ${sIdx+1} ${h === 'top' ? 'Top' : 'Bottom'} (${half.speaker})</option>`;
+      opts += `<option value="${sIdx}|${h}">${sIdx+1} ${h === 'top' ? 'Top' : 'Bottom'} (${half.speaker})</option>`;
     });
   });
   return opts;
@@ -809,7 +810,7 @@ function renderSlideCards(){
     card.className = 'slide-card';
     card.innerHTML = `
       <div class="half-capture" data-idx="${idx}" data-half="top">
-        <h4><span class="slide-num">Slide ${idx+1}</span> — Top — ${slide.top.speaker}</h4>
+        <h4><span class="slide-num">${idx+1}</span> — Top — ${slide.top.speaker}</h4>
         <div class="line-text">"${slide.top.text}"</div>
         ${slide.top.frameDataURL
           ? `<canvas class="thumb thumbCanvas" data-idx="${idx}" data-half="top"></canvas>
@@ -829,7 +830,7 @@ function renderSlideCards(){
         <button class="captureBtn" data-idx="${idx}" data-half="top">Capture frame at ${fmtTime(vp.currentTime)}</button>
       </div>
       <div class="half-capture" data-idx="${idx}" data-half="bottom">
-        <h4><span class="slide-num">Slide ${idx+1}</span> — Bottom — ${slide.bottom ? slide.bottom.speaker : '—'}</h4>
+        <h4><span class="slide-num">${idx+1}</span> — Bottom — ${slide.bottom ? slide.bottom.speaker : '—'}</h4>
         <div class="line-text">${slide.bottom ? '"'+slide.bottom.text+'"' : 'No pair (odd line out)'}</div>
         ${slide.bottom ? `${slide.bottom.frameDataURL
           ? `<canvas class="thumb thumbCanvas" data-idx="${idx}" data-half="bottom"></canvas>
@@ -1129,12 +1130,12 @@ document.addEventListener('keydown', (e)=>{
 // to be rewritten wholesale just to add or remove one slide.
 async function getProjectIndex(){
   try{
-    const raw = await storageGet('project-index');
+    const raw = await storageGet('project-index', true);
     return raw ? JSON.parse(raw) : [];
   } catch(e){ return []; }
 }
 async function setProjectIndex(list){
-  return storageSet('project-index', JSON.stringify(list));
+  return storageSet('project-index', JSON.stringify(list), true);
 }
 
 async function pushProjectToHistory(title, slideItems){
@@ -1143,7 +1144,7 @@ async function pushProjectToHistory(title, slideItems){
     const savedSlides = [];
     for(const item of slideItems){
       const id = Date.now() + '_' + Math.random().toString(36).slice(2);
-      const ok = await storageSet('history-img:' + id, item.dataURL);
+      const ok = await storageSet('history-img:' + id, item.dataURL, true);
       if(!ok) throw new Error('image save failed');
       savedSlides.push({ id, label: item.label });
     }
@@ -1167,7 +1168,7 @@ async function getProjects(){
   const projects = await getProjectIndex();
   const full = await Promise.all(projects.map(async proj=>{
     const slides = await Promise.all(proj.slides.map(async s=>{
-      const dataURL = await storageGet('history-img:' + s.id);
+      const dataURL = await storageGet('history-img:' + s.id, true);
       return { ...s, dataURL };
     }));
     return { ...proj, slides: slides.filter(s=>s.dataURL) };
@@ -1179,14 +1180,14 @@ async function deleteProject(projectId){
   const projects = await getProjectIndex();
   const proj = projects.find(p=>p.projectId === projectId);
   if(proj){
-    await Promise.all(proj.slides.map(s=>storageDelete('history-img:' + s.id)));
+    await Promise.all(proj.slides.map(s=>storageDelete('history-img:' + s.id, true)));
   }
   await setProjectIndex(projects.filter(p=>p.projectId !== projectId));
 }
 
 async function clearHistory(){
   const projects = await getProjectIndex();
-  await Promise.all(projects.flatMap(p=>p.slides.map(s=>storageDelete('history-img:' + s.id))));
+  await Promise.all(projects.flatMap(p=>p.slides.map(s=>storageDelete('history-img:' + s.id, true))));
   await setProjectIndex([]);
 }
 
@@ -1215,9 +1216,9 @@ async function renderHistoryGallery(){
     const galleryEl = card.querySelector('.gallery');
     proj.slides.forEach((item, i)=>{
       const fig = document.createElement('figure');
-      fig.innerHTML = `<img src="${item.dataURL}" alt="${escapeHTML(item.label||'')}"><figcaption>${item.label ? escapeHTML(item.label) : `Slide ${i+1}`}</figcaption>`;
+      fig.innerHTML = `<img src="${item.dataURL}" alt="${escapeHTML(item.label||'')}"><figcaption>${item.label ? escapeHTML(item.label) : (i+1)}</figcaption>`;
       fig.querySelector('img').addEventListener('click', ()=>{
-        openLightbox(item.dataURL, `${proj.title} — ${item.label ? item.label : 'Slide '+(i+1)}`);
+        openLightbox(item.dataURL, `${proj.title} — ${item.label ? item.label : (i+1)}`);
       });
       const dlBtn = document.createElement('button');
       dlBtn.textContent = 'Download PNG';
@@ -1260,7 +1261,7 @@ function renderExportGallery(){
     if(!slide.composedDataURL) return;
     const fig = document.createElement('figure');
     const fname = `slide_${String(idx+1).padStart(2,'0')}.png`;
-    const label = `Slide ${idx+1} — ${slide.top.speaker}${slide.bottom ? ' + '+slide.bottom.speaker : ''}`;
+    const label = `${idx+1} — ${slide.top.speaker}${slide.bottom ? ' + '+slide.bottom.speaker : ''}`;
     fig.innerHTML = `<img src="${slide.composedDataURL}"><figcaption>${fname}</figcaption>`;
     fig.querySelector('img').addEventListener('click', ()=>{
       openLightbox(slide.composedDataURL, label);
@@ -1292,7 +1293,7 @@ document.getElementById('downloadZipBtn').addEventListener('click', async ()=>{
     zip.file(`slide_${String(idx+1).padStart(2,'0')}.png`, base64, {base64:true});
     slideItems.push({
       dataURL: slide.composedDataURL,
-      label: `Slide ${idx+1} — ${slide.top.speaker}${slide.bottom ? ' + '+slide.bottom.speaker : ''}`
+      label: `${idx+1} — ${slide.top.speaker}${slide.bottom ? ' + '+slide.bottom.speaker : ''}`
     });
   });
   if(slideItems.length===0){ alert('No composed slides to export yet.'); return; }
