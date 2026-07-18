@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Carousel Cutter</title>
+<title>Carousel Gen.</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -318,7 +318,7 @@
 <body>
 
 <header>
-  <h1>CAROUSEL CUTTER</h1>
+  <h1>CAROUSEL GENERATOR</h1>
 </header>
 
 <div class="steps">
@@ -434,8 +434,7 @@ Adil: You stop falling in love with their potential and start accepting their re
   <!-- STEP 6: PROJECTS (shared history — every project anyone has downloaded) -->
   <section class="panel step-panel" id="panel-6" style="display:none;">
     <h2>Projects</h2>
-    <p class="sub">Every batch you've exported as a ZIP, grouped together with its title. Click any slide to enlarge it.</p>
-    <div id="storageSetupNote" style="display:none;background:var(--panel-2);border:1px solid var(--tally);border-radius:8px;padding:14px 16px;margin-bottom:16px;font-size:13px;color:var(--paper);line-height:1.5;"></div>
+    <p class="sub">Every batch you've exported as a ZIP, grouped together with its title. Click any slide to enlarge it. Saved locally in this browser — it'll still be here next time you open this file on this device, but it won't show up on other devices/browsers.</p>
     <div class="footer-actions">
       <button id="clearHistoryBtn">Clear all</button>
     </div>
@@ -453,63 +452,6 @@ Adil: You stop falling in love with their potential and start accepting their re
 </div>
 
 <script>
-// ============================================================
-// SHARED PROJECT STORAGE — powered by jsonbin.io
-//
-// This is what makes the "Projects" tab the SAME for everyone who opens
-// this file, instead of only living in your own browser.
-//
-// One-time setup (takes ~2 minutes, no credit card):
-//   1. Go to https://jsonbin.io and sign up free (Google/GitHub login is fastest).
-//   2. On your Dashboard, open "API Keys" and copy your X-MASTER-KEY.
-//   3. Paste it below as JSONBIN_MASTER_KEY.
-//   4. Save this file, open it, go to the Projects tab, and click
-//      "Create shared project list" — it'll create one small index bin
-//      and show you its ID.
-//   5. Paste that ID below as JSONBIN_INDEX_BIN_ID, save the file again,
-//      and re-upload/re-share it. From then on everyone who opens this
-//      file sees and adds to the same Projects list.
-//
-// Note: the free jsonbin.io plan includes 10,000 API requests to start —
-// plenty for casual/team use, but if this gets heavy traffic you may
-// eventually need to add more requests on their pricing page.
-// ============================================================
-const JSONBIN_MASTER_KEY = "$2a$10$7reERGwqtw/i9exNldDHguj79MMVnsLPu7A7ZhJTzp9.AL7aeAYNK";      // <-- paste your X-Master-Key here
-const JSONBIN_INDEX_BIN_ID = "6a5bd774da38895dfe7029af";    // <-- paste your index bin ID here (step 5 above)
-
-const JSONBIN_BASE = "https://api.jsonbin.io/v3/b";
-const storageReady = !!JSONBIN_MASTER_KEY;
-
-async function jsonbinRequest(method, id, body){
-  const url = id ? `${JSONBIN_BASE}/${id}` : JSONBIN_BASE;
-  const headers = { "Content-Type": "application/json", "X-Master-Key": JSONBIN_MASTER_KEY };
-  if(method === "PUT") headers["X-Bin-Versioning"] = "false"; // overwrite in place, don't pile up versions
-  const res = await fetch(url, {
-    method,
-    headers,
-    body: body !== undefined ? JSON.stringify(body) : undefined
-  });
-  if(!res.ok){
-    const errText = await res.text().catch(()=> "");
-    throw new Error(`jsonbin ${method} ${id||''} failed: ${res.status} ${errText}`);
-  }
-  if(method === "DELETE") return null;
-  const data = await res.json();
-  return data.record;
-}
-
-async function createIndexBin(){
-  const record = await jsonbinRequest("POST", null, { projects: [] });
-  // POST doesn't return the id inside "record" the same way GET does, so re-fetch metadata via a raw call
-  const res = await fetch(JSONBIN_BASE, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "X-Master-Key": JSONBIN_MASTER_KEY, "X-Bin-Name": "carousel-cutter-index" },
-    body: JSON.stringify({ projects: [] })
-  });
-  const data = await res.json();
-  return data.metadata.id;
-}
-
 // ---------- state ----------
 let videoFile = null;
 let scriptLines = []; // {speaker, text}
@@ -611,10 +553,11 @@ document.getElementById('parseScriptBtn').addEventListener('click', ()=>{
   setTimeout(()=>goToStep(3), 300);
 });
 
-// ---------- local persistence for small settings (font) ----------
-// This is per-browser only (not shared) — fine for something like a font file,
-// which each person uploads for themselves. Uses IndexedDB since localStorage
-// isn't reliably available in every hosting context.
+// ---------- local persistence (font + projects) ----------
+// Everything here lives in YOUR browser only, via IndexedDB — no network calls,
+// no accounts, nothing external. That means it's rock solid and instant, but a
+// Projects entry you save here won't show up for someone else opening this same
+// file on their own device/browser — there's no server in the loop to relay it.
 function openKVDB(){
   return new Promise((resolve, reject)=>{
     const req = indexedDB.open('carouselCutterDB_v2', 1);
@@ -644,6 +587,27 @@ async function idbSet(key, value){
     tx.objectStore('kv').put({key, value});
     tx.oncomplete = ()=>resolve(true);
     tx.onerror = ()=>reject(tx.error);
+  });
+}
+async function idbDelete(key){
+  const db = await openKVDB();
+  return new Promise((resolve, reject)=>{
+    const tx = db.transaction('kv','readwrite');
+    tx.objectStore('kv').delete(key);
+    tx.oncomplete = ()=>resolve(true);
+    tx.onerror = ()=>reject(tx.error);
+  });
+}
+async function idbListByPrefix(prefix){
+  const db = await openKVDB();
+  return new Promise((resolve, reject)=>{
+    const tx = db.transaction('kv','readonly');
+    const req = tx.objectStore('kv').getAll();
+    req.onsuccess = ()=>{
+      const rows = req.result.filter(r=>r.key.startsWith(prefix));
+      resolve(rows);
+    };
+    req.onerror = ()=>reject(req.error);
   });
 }
 
@@ -1140,120 +1104,42 @@ document.addEventListener('keydown', (e)=>{
   if(e.key === 'Escape' && lightboxOverlay.classList.contains('open')) closeLightbox();
 });
 
-// ---------- shared project storage (jsonbin.io) ----------
-// Structure:
-//   - one small "index" bin (JSONBIN_INDEX_BIN_ID) holding { projects: [{binId, title, savedAt, slideCount}] }
-//   - one bin PER PROJECT holding { title, savedAt, slides: [{label, dataURL}] }
-// Split this way so a project full of images never has to be crammed into
-// (and re-sent as part of) one giant shared index document.
+// ---------- project storage (local IndexedDB) ----------
+// Each project is stored under key "project:<id>" so we can list them all
+// by prefix without loading everything into one giant record.
 
 async function pushProjectToHistory(title, slideItems){
-  if(!storageReady){
-    alert("Shared Projects isn't set up yet — see the setup note in the Projects tab. The download itself still worked.");
-    return false;
-  }
-  if(!JSONBIN_INDEX_BIN_ID){
-    alert("Shared Projects needs an index bin first — go to the Projects tab and click \"Create shared project list\", then paste the resulting ID into JSONBIN_INDEX_BIN_ID in the file. The download itself still worked.");
-    return false;
-  }
   try{
     const finalTitle = title && title.trim() ? title.trim() : 'Untitled project';
     const savedAt = new Date().toISOString();
-
-    // 1. create a bin just for this project's slides
-    const projectRecord = await jsonbinRequest("POST", null, { title: finalTitle, savedAt, slides: slideItems });
-    const createRes = await fetch(JSONBIN_BASE, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Master-Key": JSONBIN_MASTER_KEY, "X-Bin-Name": "carousel-cutter-project" },
-      body: JSON.stringify({ title: finalTitle, savedAt, slides: slideItems })
-    });
-    const createData = await createRes.json();
-    const projectBinId = createData.metadata.id;
-
-    // 2. append a lightweight entry to the shared index
-    const index = await jsonbinRequest("GET", JSONBIN_INDEX_BIN_ID + "/latest");
-    const projects = (index && index.projects) || [];
-    projects.unshift({ binId: projectBinId, title: finalTitle, savedAt, slideCount: slideItems.length });
-    await jsonbinRequest("PUT", JSONBIN_INDEX_BIN_ID, { projects });
-
+    const id = 'project:' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+    await idbSet(id, { title: finalTitle, savedAt, slides: slideItems });
     return true;
   } catch(e){
-    console.warn('Could not save project to shared storage:', e);
-    alert('Could not save this project to shared Projects (' + (e.message || 'unknown error') + '). The download itself still worked.');
+    console.warn('Could not save project locally:', e);
+    alert('Could not save this project to Projects (' + (e.message || 'unknown error') + '). The download itself still worked.');
     return false;
   }
 }
 
 async function getProjects(){
-  if(!storageReady || !JSONBIN_INDEX_BIN_ID) return [];
-  const index = await jsonbinRequest("GET", JSONBIN_INDEX_BIN_ID + "/latest");
-  const entries = (index && index.projects) || [];
-  const projects = await Promise.all(entries.map(async entry=>{
-    try{
-      const rec = await jsonbinRequest("GET", entry.binId + "/latest");
-      return { projectId: entry.binId, title: rec.title || entry.title, savedAt: rec.savedAt || entry.savedAt, slides: rec.slides || [] };
-    } catch(e){
-      // project bin might have been deleted directly on jsonbin — skip it
-      return { projectId: entry.binId, title: entry.title, savedAt: entry.savedAt, slides: [], missing: true };
-    }
-  }));
-  return projects;
+  const rows = await idbListByPrefix('project:');
+  return rows
+    .map(r => ({ projectId: r.key, title: r.value.title, savedAt: r.value.savedAt, slides: r.value.slides || [] }))
+    .sort((a,b) => new Date(b.savedAt) - new Date(a.savedAt));
 }
 
 async function deleteProject(projectId){
-  if(!storageReady || !JSONBIN_INDEX_BIN_ID) return;
-  try{ await jsonbinRequest("DELETE", projectId); } catch(e){ /* already gone, ignore */ }
-  const index = await jsonbinRequest("GET", JSONBIN_INDEX_BIN_ID + "/latest");
-  const projects = ((index && index.projects) || []).filter(p=>p.binId !== projectId);
-  await jsonbinRequest("PUT", JSONBIN_INDEX_BIN_ID, { projects });
+  await idbDelete(projectId);
 }
 
 async function clearHistory(){
-  if(!storageReady || !JSONBIN_INDEX_BIN_ID) return;
-  const index = await jsonbinRequest("GET", JSONBIN_INDEX_BIN_ID + "/latest");
-  const projects = (index && index.projects) || [];
-  for(const p of projects){
-    try{ await jsonbinRequest("DELETE", p.binId); } catch(e){ /* ignore */ }
-  }
-  await jsonbinRequest("PUT", JSONBIN_INDEX_BIN_ID, { projects: [] });
-}
-
-function renderStorageSetupNote(){
-  const note = document.getElementById('storageSetupNote');
-  if(!storageReady){
-    note.style.display = 'block';
-    note.innerHTML = `<strong style="color:var(--tally);">Shared Projects isn't connected yet.</strong> Open this HTML file, find <code class="mono">JSONBIN_MASTER_KEY</code> near the top of the &lt;script&gt; tag, and paste in a free API key from <a href="https://jsonbin.io" target="_blank" style="color:var(--teal);">jsonbin.io</a> (sign up, then copy your X-Master-Key from the dashboard). Save the file and re-upload it.`;
-    return true;
-  }
-  if(!JSONBIN_INDEX_BIN_ID){
-    note.style.display = 'block';
-    note.innerHTML = `<strong style="color:var(--tally);">Almost there.</strong> Your API key is set. Now click "Create shared project list" below, copy the ID it gives you into <code class="mono">JSONBIN_INDEX_BIN_ID</code> near the top of the &lt;script&gt; tag, save the file, and re-upload it. <button id="createIndexBinBtn" style="margin-top:8px;">Create shared project list</button>`;
-    setTimeout(()=>{
-      const btn = document.getElementById('createIndexBinBtn');
-      if(btn) btn.addEventListener('click', async ()=>{
-        btn.disabled = true; btn.textContent = 'Creating…';
-        try{
-          const id = await createIndexBin();
-          alert(`Created! Paste this into JSONBIN_INDEX_BIN_ID:\n\n${id}`);
-        } catch(e){
-          alert('Could not create the index bin: ' + (e.message || e));
-        }
-        btn.disabled = false; btn.textContent = 'Create shared project list';
-      });
-    }, 0);
-    return true;
-  }
-  note.style.display = 'none';
-  return false;
+  const rows = await idbListByPrefix('project:');
+  for(const r of rows){ await idbDelete(r.key); }
 }
 
 async function renderHistoryGallery(){
   const gallery = document.getElementById('historyGallery');
-  const blocked = renderStorageSetupNote();
-  if(blocked){
-    gallery.innerHTML = '';
-    return;
-  }
 
   let projects;
   try{
@@ -1307,7 +1193,7 @@ async function renderHistoryGallery(){
 
   gallery.querySelectorAll('.deleteProjectBtn').forEach(btn=>{
     btn.addEventListener('click', async ()=>{
-      if(confirm('Delete this project? This can\'t be undone, and it deletes it for everyone sharing this link.')){
+      if(confirm('Delete this project? This can\'t be undone.')){
         await deleteProject(btn.dataset.id);
         renderHistoryGallery();
       }
@@ -1316,7 +1202,7 @@ async function renderHistoryGallery(){
 }
 
 document.getElementById('clearHistoryBtn').addEventListener('click', async ()=>{
-  if(confirm('Clear ALL projects for everyone sharing this link? This can\'t be undone.')){
+  if(confirm('Clear ALL projects on this device? This can\'t be undone.')){
     await clearHistory();
     renderHistoryGallery();
   }
