@@ -202,10 +202,35 @@
   .copy-row button{font-size:11px;padding:6px 10px;}
 
   .slide-preview{display:flex;flex-direction:column;align-items:center;gap:8px;}
-  .slide-preview canvas{width:100%;border-radius:6px;border:1px solid var(--line);}
-  .edit-text-block{width:100%;margin-top:6px;}
-  .edit-text-block textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:6px;color:var(--text);font-family:'Inter',sans-serif;font-size:12px;padding:8px;resize:vertical;margin-bottom:6px;}
-  .edit-text-block button{width:100%;}
+  .slide-preview-wrap{position:relative;width:100%;line-height:0;}
+  .slide-preview canvas{width:100%;border-radius:6px;border:1px solid var(--line);display:block;}
+  .caption-editable{
+    position:absolute;
+    left:6%;right:6%;
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    text-align:center;
+    color:transparent;
+    caret-color:var(--teal);
+    font-family:'Inter',sans-serif;
+    font-style:italic;
+    font-weight:700;
+    line-height:1.25;
+    padding:4px 2px;
+    border-radius:4px;
+    border:1px dashed transparent;
+    cursor:text;
+    outline:none;
+    white-space:pre-wrap;
+    overflow:hidden;
+  }
+  .caption-editable.top-half{top:26%;bottom:50%;}
+  .caption-editable.top-half.solo{top:76%;bottom:0;}
+  .caption-editable.bottom-half{top:76%;bottom:0;}
+  .caption-editable:hover{border-color:rgba(45,212,191,0.35);background:rgba(0,0,0,0.15);}
+  .caption-editable:focus{border-color:var(--teal);background:rgba(0,0,0,0.35);color:rgba(255,255,255,0.85);}
+  .edit-hint{font-size:11px;color:var(--muted);text-align:center;}
 
   .gallery{
     display:grid;
@@ -224,7 +249,7 @@
 <body>
 
 <header>
-  <h1>CAROUSEL GENERATOR</h1>
+  <h1>CAROUSEL CUTTER</h1>
 </header>
 
 <div class="steps">
@@ -449,8 +474,96 @@ document.getElementById('parseScriptBtn').addEventListener('click', ()=>{
   setTimeout(()=>goToStep(3), 300);
 });
 
+// ---------- persistence layer ----------
+// Uses Claude's artifact persistent storage (window.storage) when this is running
+// as a claude.ai artifact, since that's the only storage that actually survives
+// between sessions there — localStorage/IndexedDB get wiped on reload in that sandbox.
+// Falls back to IndexedDB automatically if the artifact is downloaded and opened
+// in a regular browser, where window.storage doesn't exist but IndexedDB persists fine.
+const hasClaudeStorage = (typeof window !== 'undefined') && !!window.storage;
+
+function openKVDB(){
+  return new Promise((resolve, reject)=>{
+    const req = indexedDB.open('carouselCutterDB_v2', 1);
+    req.onupgradeneeded = ()=>{
+      const db = req.result;
+      if(!db.objectStoreNames.contains('kv')){
+        db.createObjectStore('kv', {keyPath:'key'});
+      }
+    };
+    req.onsuccess = ()=>resolve(req.result);
+    req.onerror = ()=>reject(req.error);
+  });
+}
+async function idbGet(key){
+  const db = await openKVDB();
+  return new Promise((resolve, reject)=>{
+    const tx = db.transaction('kv','readonly');
+    const req = tx.objectStore('kv').get(key);
+    req.onsuccess = ()=>resolve(req.result ? req.result.value : null);
+    req.onerror = ()=>reject(req.error);
+  });
+}
+async function idbSet(key, value){
+  const db = await openKVDB();
+  return new Promise((resolve, reject)=>{
+    const tx = db.transaction('kv','readwrite');
+    tx.objectStore('kv').put({key, value});
+    tx.oncomplete = ()=>resolve(true);
+    tx.onerror = ()=>reject(tx.error);
+  });
+}
+async function idbDelete(key){
+  const db = await openKVDB();
+  return new Promise((resolve, reject)=>{
+    const tx = db.transaction('kv','readwrite');
+    tx.objectStore('kv').delete(key);
+    tx.oncomplete = ()=>resolve(true);
+    tx.onerror = ()=>reject(tx.error);
+  });
+}
+
+async function storageGet(key){
+  if(hasClaudeStorage){
+    try{
+      const r = await window.storage.get(key, false);
+      return r ? r.value : null;
+    } catch(e){ return null; }
+  }
+  try{ return await idbGet(key); } catch(e){ return null; }
+}
+async function storageSet(key, value){
+  if(hasClaudeStorage){
+    try{
+      const r = await window.storage.set(key, value, false);
+      return !!r;
+    } catch(e){ console.warn('storageSet failed', key, e); return false; }
+  }
+  try{ return await idbSet(key, value); } catch(e){ console.warn('storageSet failed', key, e); return false; }
+}
+async function storageDelete(key){
+  if(hasClaudeStorage){
+    try{ await window.storage.delete(key, false); return true; } catch(e){ return false; }
+  }
+  try{ return await idbDelete(key); } catch(e){ return false; }
+}
+
 // ---------- step 3: style ----------
-const FONT_KEY = 'carouselCutter_font_v1';
+async function saveFontData(name, base64){
+  try{
+    const ok = await storageSet('custom-font', JSON.stringify({name, base64}));
+    if(!ok) console.warn('Font could not be saved for next time (storage full or unavailable).');
+  } catch(e){ console.warn('Could not save font for next time:', e); }
+}
+async function loadSavedFont(){
+  try{
+    const raw = await storageGet('custom-font');
+    if(raw){
+      const saved = JSON.parse(raw);
+      await applyFontBuffer(base64ToArrayBuffer(saved.base64), saved.name + ' (saved)');
+    }
+  } catch(e){ /* ignore */ }
+}
 
 function arrayBufferToBase64(buf){
   let binary = '';
@@ -481,22 +594,11 @@ document.getElementById('fontInput').addEventListener('change', async e=>{
   if(!file) return;
   const buf = await file.arrayBuffer();
   await applyFontBuffer(buf, file.name);
-  try{
-    localStorage.setItem(FONT_KEY, JSON.stringify({ name: file.name, base64: arrayBufferToBase64(buf) }));
-  } catch(e){
-    console.warn('Could not save font for next time (storage full):', e);
-  }
+  await saveFontData(file.name, arrayBufferToBase64(buf));
 });
 
 // on load, restore a previously saved font so it doesn't need re-uploading each time
-(function restoreSavedFont(){
-  try{
-    const saved = JSON.parse(localStorage.getItem(FONT_KEY) || 'null');
-    if(saved){
-      applyFontBuffer(base64ToArrayBuffer(saved.base64), saved.name + ' (saved)');
-    }
-  } catch(e){ /* ignore */ }
-})();
+loadSavedFont();
 
 function getStyleConfig(){
   return {
@@ -563,6 +665,63 @@ function buildCopyOptions(currentIdx, currentHalf){
   return opts;
 }
 
+function escapeHTML(str){
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+// scales the overlay caption font-size to match how big the caption will actually
+// render on the canvas, based on the canvas's current on-screen width
+function syncEditableFontSize(idx){
+  const canvas = document.querySelector(`.slideCanvas[data-idx="${idx}"]`);
+  if(!canvas) return;
+  const style = getStyleConfig();
+  const rect = canvas.getBoundingClientRect();
+  const scale = rect.width / canvas.width;
+  const px = Math.max(8, style.fontSize * scale);
+  document.querySelectorAll(`.caption-editable[data-idx="${idx}"]`).forEach(el=>{
+    el.style.fontSize = px + 'px';
+    el.style.color = document.activeElement === el ? 'rgba(255,255,255,0.85)' : 'transparent';
+  });
+}
+
+function bindCaptionEditable(el, container){
+  const idx = parseInt(el.dataset.idx);
+  const half = el.dataset.half;
+  let debounceTimer;
+
+  function syncFromEditable(){
+    const text = el.innerText.replace(/\n+$/,'');
+    slides[idx][half].text = text;
+    const quoteEl = container.querySelector(`.half-capture[data-idx="${idx}"][data-half="${half}"] .line-text`);
+    if(quoteEl) quoteEl.textContent = `"${text}"`;
+    composeSlide(idx);
+  }
+
+  el.addEventListener('keydown', e=>{
+    if(e.key === 'Enter'){
+      e.preventDefault();
+      document.execCommand('insertLineBreak');
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(syncFromEditable, 250);
+    }
+  });
+  el.addEventListener('input', ()=>{
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(syncFromEditable, 400);
+  });
+  el.addEventListener('focus', ()=>{ el.style.color = 'rgba(255,255,255,0.85)'; });
+  el.addEventListener('blur', ()=>{
+    clearTimeout(debounceTimer);
+    el.style.color = 'transparent';
+    syncFromEditable();
+  });
+
+  syncEditableFontSize(idx);
+  window.addEventListener('resize', ()=>syncEditableFontSize(idx));
+}
+
 function renderSlideCards(){
   const container = document.getElementById('slidesContainer');
   container.innerHTML = '';
@@ -611,36 +770,20 @@ function renderSlideCards(){
         <button class="captureBtn" data-idx="${idx}" data-half="bottom">Capture frame at ${fmtTime(vp.currentTime)}</button>` : ''}
       </div>
       <div class="slide-preview">
-        <canvas class="slideCanvas" data-idx="${idx}" width="1080" height="1350"></canvas>
-        <button class="composeBtn" data-idx="${idx}">Compose slide</button>
-        <div class="edit-text-block">
-          <label class="field">Top caption (use Enter for a manual line break)</label>
-          <textarea class="editTopText" data-idx="${idx}" rows="2">${slide.top.text}</textarea>
-          ${slide.bottom ? `<label class="field">Bottom caption</label>
-          <textarea class="editBottomText" data-idx="${idx}" rows="2">${slide.bottom.text}</textarea>` : ''}
-          <button class="applyEditBtn" data-idx="${idx}">Apply text &amp; recompose</button>
+        <div class="slide-preview-wrap">
+          <canvas class="slideCanvas" data-idx="${idx}" width="1080" height="1350"></canvas>
+          <div class="caption-editable ${slide.bottom ? 'top-half' : 'top-half solo'}" data-idx="${idx}" data-half="top" contenteditable="true" spellcheck="false">${escapeHTML(slide.top.text)}</div>
+          ${slide.bottom ? `<div class="caption-editable bottom-half" data-idx="${idx}" data-half="bottom" contenteditable="true" spellcheck="false">${escapeHTML(slide.bottom.text)}</div>` : ''}
         </div>
+        <div class="edit-hint">Click directly on the caption above to edit it — Enter for a manual line break</div>
+        <button class="composeBtn" data-idx="${idx}">Compose slide</button>
       </div>
     `;
     container.appendChild(card);
   });
 
-  container.querySelectorAll('.applyEditBtn').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const idx = parseInt(btn.dataset.idx);
-      const topTa = container.querySelector(`.editTopText[data-idx="${idx}"]`);
-      const bottomTa = container.querySelector(`.editBottomText[data-idx="${idx}"]`);
-      slides[idx].top.text = topTa.value;
-      if(slides[idx].bottom && bottomTa) slides[idx].bottom.text = bottomTa.value;
-      // keep the visible quote preview in sync without a full rebuild
-      const topQuoteEl = container.querySelector(`.half-capture[data-idx="${idx}"][data-half="top"] .line-text`);
-      if(topQuoteEl) topQuoteEl.textContent = `"${slides[idx].top.text}"`;
-      if(slides[idx].bottom){
-        const bottomQuoteEl = container.querySelector(`.half-capture[data-idx="${idx}"][data-half="bottom"] .line-text`);
-        if(bottomQuoteEl) bottomQuoteEl.textContent = `"${slides[idx].bottom.text}"`;
-      }
-      composeSlide(idx);
-    });
+  container.querySelectorAll('.caption-editable').forEach(el=>{
+    bindCaptionEditable(el, container);
   });
 
   container.querySelectorAll('.copyBtn').forEach(btn=>{
@@ -879,32 +1022,58 @@ function composeSlide(idx){
   });
 }
 
-// ---------- persistent history (localStorage — persists across opens in this browser) ----------
-const HISTORY_KEY = 'carouselCutter_history_v1';
-
-function getHistory(){
-  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); }
-  catch(e){ return []; }
+// ---------- persistent history ----------
+// A small "history-index" record holds the lightweight metadata for every saved slide,
+// and each slide's image is stored separately under its own "history-img:<id>" key so
+// a single large export never has to be rewritten just to add one new item.
+async function getHistoryIndex(){
+  try{
+    const raw = await storageGet('history-index');
+    return raw ? JSON.parse(raw) : [];
+  } catch(e){ return []; }
+}
+async function setHistoryIndex(list){
+  return storageSet('history-index', JSON.stringify(list));
 }
 
-function pushToHistory(dataURL, label){
-  const history = getHistory();
-  history.push({
-    id: Date.now() + '_' + Math.random().toString(36).slice(2),
-    savedAt: new Date().toISOString(),
-    label,
-    dataURL
-  });
-  try {
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+async function pushToHistory(dataURL, label){
+  try{
+    const id = Date.now() + '_' + Math.random().toString(36).slice(2);
+    const savedImg = await storageSet('history-img:' + id, dataURL);
+    if(!savedImg) throw new Error('image save failed');
+    const idx = await getHistoryIndex();
+    idx.push({ id, savedAt: new Date().toISOString(), label });
+    await setHistoryIndex(idx);
   } catch(e){
-    alert('Your browser\'s local storage is full, so this slide couldn\'t be added to Previous Exports. Clear some history or download slides you need, then try again.');
+    console.warn('Could not save to Projects history:', e);
+    alert('Could not save this to Projects history (storage full or unavailable). The download itself still worked.');
   }
 }
 
-function renderHistoryGallery(){
+async function getHistory(){
+  const idx = await getHistoryIndex();
+  const items = await Promise.all(idx.map(async meta=>{
+    const dataURL = await storageGet('history-img:' + meta.id);
+    return { ...meta, dataURL };
+  }));
+  return items.filter(it=>it.dataURL);
+}
+
+async function deleteHistoryItem(id){
+  await storageDelete('history-img:' + id);
+  const idx = await getHistoryIndex();
+  await setHistoryIndex(idx.filter(it=>it.id !== id));
+}
+
+async function clearHistory(){
+  const idx = await getHistoryIndex();
+  await Promise.all(idx.map(it=>storageDelete('history-img:' + it.id)));
+  await setHistoryIndex([]);
+}
+
+async function renderHistoryGallery(){
   const gallery = document.getElementById('historyGallery');
-  const history = getHistory();
+  const history = await getHistory();
   gallery.innerHTML = '';
   if(history.length === 0){
     gallery.innerHTML = '<p style="color:var(--muted);font-size:13px;">No previous exports yet — composed slides will start collecting here automatically.</p>';
@@ -928,9 +1097,8 @@ function renderHistoryGallery(){
     delBtn.textContent = 'Delete';
     delBtn.style.width = '100%';
     delBtn.style.marginTop = '4px';
-    delBtn.addEventListener('click', ()=>{
-      const remaining = getHistory().filter(h=>h.id !== item.id);
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(remaining));
+    delBtn.addEventListener('click', async ()=>{
+      await deleteHistoryItem(item.id);
       renderHistoryGallery();
     });
     fig.appendChild(dlBtn);
@@ -939,9 +1107,9 @@ function renderHistoryGallery(){
   });
 }
 
-document.getElementById('clearHistoryBtn').addEventListener('click', ()=>{
+document.getElementById('clearHistoryBtn').addEventListener('click', async ()=>{
   if(confirm('Clear all previous exports? This can\'t be undone.')){
-    localStorage.removeItem(HISTORY_KEY);
+    await clearHistory();
     renderHistoryGallery();
   }
 });
