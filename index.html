@@ -197,6 +197,9 @@
   .zoom-row .hint{font-size:11px;color:var(--muted);white-space:nowrap;}
   .zoom-row input[type=range]{flex:1;}
   div.hint{font-size:11px;color:var(--muted);margin-bottom:8px;}
+  .copy-row{display:flex;gap:6px;margin-bottom:8px;}
+  .copy-row select{flex:1;background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:6px;font-size:11px;padding:6px;}
+  .copy-row button{font-size:11px;padding:6px 10px;}
 
   .slide-preview{display:flex;flex-direction:column;align-items:center;gap:8px;}
   .slide-preview canvas{width:100%;border-radius:6px;border:1px solid var(--line);}
@@ -330,12 +333,19 @@ Adil: You stop falling in love with their potential and start accepting their re
   <!-- STEP 5: EXPORT -->
   <section class="panel step-panel" id="panel-5" style="display:none;">
     <h2>Export</h2>
-    <p class="sub">Every composed slide, in order.</p>
+    <p class="sub">Every composed slide from this session, in order.</p>
     <div class="footer-actions">
       <button class="primary" id="downloadZipBtn">Download all as ZIP</button>
     </div>
     <p class="sub" style="margin:8px 0 0;">If your browser flags the ZIP as unsafe, that's a false positive (common for auto-generated ZIPs) — click "Keep anyway," or just download each slide as an individual PNG below instead.</p>
     <div class="gallery" id="exportGallery"></div>
+
+    <h2 style="margin-top:28px;">Previous exports</h2>
+    <p class="sub">Every slide you've ever composed on this computer/browser, kept automatically. Nothing is deleted unless you clear it.</p>
+    <div class="footer-actions">
+      <button id="clearHistoryBtn">Clear all history</button>
+    </div>
+    <div class="gallery" id="historyGallery"></div>
   </section>
 
 </main>
@@ -356,7 +366,7 @@ document.querySelectorAll('.step-tab').forEach(tab=>{
     document.querySelectorAll('.step-panel').forEach(p=>p.style.display='none');
     tab.classList.add('active');
     document.getElementById('panel-'+tab.dataset.step).style.display='block';
-    if(tab.dataset.step==='5') renderExportGallery();
+    if(tab.dataset.step==='5'){ renderExportGallery(); renderHistoryGallery(); }
   });
 });
 function goToStep(n){
@@ -532,6 +542,22 @@ vp.addEventListener('timeupdate', ()=>{
 });
 document.getElementById('stepBack').addEventListener('click', ()=>{ vp.currentTime = Math.max(0, vp.currentTime - 0.033); });
 document.getElementById('stepFwd').addEventListener('click', ()=>{ vp.currentTime = Math.min(vp.duration, vp.currentTime + 0.033); });
+
+// left/right arrow keys jump 5s back/forward in the video (only while on the capture step, and not while typing)
+document.addEventListener('keydown', (e)=>{
+  const activeTag = (document.activeElement && document.activeElement.tagName) || '';
+  if(['INPUT','TEXTAREA','SELECT'].includes(activeTag)) return;
+  const panel4 = document.getElementById('panel-4');
+  if(!panel4 || panel4.style.display === 'none') return;
+  if(!vp.duration) return;
+  if(e.key === 'ArrowRight'){
+    e.preventDefault();
+    vp.currentTime = Math.min(vp.duration, vp.currentTime + 5);
+  } else if(e.key === 'ArrowLeft'){
+    e.preventDefault();
+    vp.currentTime = Math.max(0, vp.currentTime - 5);
+  }
+});
 function fmtTime(t){
   const m = Math.floor(t/60).toString().padStart(2,'0');
   const s = (t%60).toFixed(1).padStart(4,'0');
@@ -543,6 +569,19 @@ function captureCurrentFrame(){
   c.width = vp.videoWidth; c.height = vp.videoHeight;
   c.getContext('2d').drawImage(vp,0,0,c.width,c.height);
   return c.toDataURL('image/jpeg', 0.92);
+}
+
+function buildCopyOptions(currentIdx, currentHalf){
+  let opts = '';
+  slides.forEach((s, sIdx)=>{
+    ['top','bottom'].forEach(h=>{
+      const half = s[h];
+      if(!half || !half.frameDataURL) return;
+      if(sIdx === currentIdx && h === currentHalf) return;
+      opts += `<option value="${sIdx}|${h}">Slide ${sIdx+1} ${h === 'top' ? 'Top' : 'Bottom'} (${half.speaker})</option>`;
+    });
+  });
+  return opts;
 }
 
 function renderSlideCards(){
@@ -563,6 +602,13 @@ function renderSlideCards(){
              </div>
              <div class="hint">Drag to reposition · scroll to zoom</div>`
           : `<div class="thumb empty">No frame captured yet</div>`}
+        <div class="copy-row">
+          <select class="copySourceSelect" data-idx="${idx}" data-half="top">
+            <option value="">Duplicate from…</option>
+            ${buildCopyOptions(idx,'top')}
+          </select>
+          <button class="copyBtn" data-idx="${idx}" data-half="top">Copy</button>
+        </div>
         <button class="captureBtn" data-idx="${idx}" data-half="top">Capture frame at ${fmtTime(vp.currentTime)}</button>
       </div>
       <div class="half-capture" data-idx="${idx}" data-half="bottom">
@@ -576,6 +622,13 @@ function renderSlideCards(){
              </div>
              <div class="hint">Drag to reposition · scroll to zoom</div>`
           : `<div class="thumb empty">No frame captured yet</div>`}
+        <div class="copy-row">
+          <select class="copySourceSelect" data-idx="${idx}" data-half="bottom">
+            <option value="">Duplicate from…</option>
+            ${buildCopyOptions(idx,'bottom')}
+          </select>
+          <button class="copyBtn" data-idx="${idx}" data-half="bottom">Copy</button>
+        </div>
         <button class="captureBtn" data-idx="${idx}" data-half="bottom">Capture frame at ${fmtTime(vp.currentTime)}</button>` : ''}
       </div>
       <div class="slide-preview">
@@ -584,6 +637,26 @@ function renderSlideCards(){
       </div>
     `;
     container.appendChild(card);
+  });
+
+  container.querySelectorAll('.copyBtn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const idx = parseInt(btn.dataset.idx);
+      const half = btn.dataset.half;
+      const select = container.querySelector(`.copySourceSelect[data-idx="${idx}"][data-half="${half}"]`);
+      const val = select.value;
+      if(!val) return;
+      const [srcIdxStr, srcHalf] = val.split('|');
+      const src = slides[parseInt(srcIdxStr)][srcHalf];
+      slides[idx][half] = {
+        ...slides[idx][half],
+        frameDataURL: src.frameDataURL,
+        zoom: src.zoom,
+        centerX: src.centerX,
+        centerY: src.centerY
+      };
+      renderSlideCards();
+    });
   });
 
   container.querySelectorAll('.captureBtn').forEach(btn=>{
@@ -795,8 +868,66 @@ function composeSlide(idx){
     }
 
     slide.composedDataURL = canvas.toDataURL('image/png');
+    pushToHistory(slide.composedDataURL, `${slide.top.speaker}${slide.bottom ? ' + '+slide.bottom.speaker : ''}`);
   });
 }
+
+// ---------- persistent history (localStorage — persists across opens in this browser) ----------
+const HISTORY_KEY = 'carouselCutter_history_v1';
+
+function getHistory(){
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); }
+  catch(e){ return []; }
+}
+
+function pushToHistory(dataURL, label){
+  const history = getHistory();
+  history.push({
+    id: Date.now() + '_' + Math.random().toString(36).slice(2),
+    savedAt: new Date().toISOString(),
+    label,
+    dataURL
+  });
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  } catch(e){
+    alert('Your browser\'s local storage is full, so this slide couldn\'t be added to Previous Exports. Clear some history or download slides you need, then try again.');
+  }
+}
+
+function renderHistoryGallery(){
+  const gallery = document.getElementById('historyGallery');
+  const history = getHistory();
+  gallery.innerHTML = '';
+  if(history.length === 0){
+    gallery.innerHTML = '<p style="color:var(--muted);font-size:13px;">No previous exports yet — composed slides will start collecting here automatically.</p>';
+    return;
+  }
+  history.slice().reverse().forEach(item=>{
+    const fig = document.createElement('figure');
+    const when = new Date(item.savedAt).toLocaleString();
+    fig.innerHTML = `<img src="${item.dataURL}"><figcaption>${item.label || ''}<br>${when}</figcaption>`;
+    const dlBtn = document.createElement('button');
+    dlBtn.textContent = 'Download PNG';
+    dlBtn.style.width = '100%';
+    dlBtn.style.marginTop = '6px';
+    dlBtn.addEventListener('click', ()=>{
+      const a = document.createElement('a');
+      a.href = item.dataURL;
+      a.download = `carousel_${item.id}.png`;
+      a.click();
+    });
+    fig.appendChild(dlBtn);
+    gallery.appendChild(fig);
+  });
+}
+
+document.getElementById('clearHistoryBtn').addEventListener('click', ()=>{
+  if(confirm('Clear all previous exports? This can\'t be undone.')){
+    localStorage.removeItem(HISTORY_KEY);
+    renderHistoryGallery();
+  }
+});
 
 // ---------- step 5: export ----------
 function renderExportGallery(){
