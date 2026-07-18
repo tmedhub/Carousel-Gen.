@@ -3,10 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Carousel Gen.</title>
+<title>Carousel Gen</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
   :root{
     --bg: #15151a;
@@ -434,7 +436,10 @@ Adil: You stop falling in love with their potential and start accepting their re
   <!-- STEP 6: PROJECTS (persisted history — every slide you've downloaded) -->
   <section class="panel step-panel" id="panel-6" style="display:none;">
     <h2>Projects</h2>
-    <p class="sub">Every batch you've exported as a ZIP, grouped together with its title. <strong>Shared:</strong> visible to anyone who opens this artifact, not just you — deleting here removes it for everyone too. Click any slide to enlarge it.</p>
+    <p class="sub">Every batch you've exported as a ZIP, grouped together with its title. Click any slide to enlarge it.</p>
+    <div id="firebaseSetupNote" style="display:none;background:var(--panel-2);border:1px solid var(--tally);border-radius:8px;padding:14px 16px;margin-bottom:16px;font-size:13px;color:var(--paper);line-height:1.5;">
+      <strong style="color:var(--tally);">Shared Projects isn't connected yet.</strong> Open this HTML file, find the <code class="mono">firebaseConfig</code> object near the top of the &lt;script&gt; tag, and paste in your own Firebase project's config values. Once that's filled in and the file is re-uploaded to GitHub, everyone opening the link will see the same Projects list.
+    </div>
     <div class="footer-actions">
       <button id="clearHistoryBtn">Clear all</button>
     </div>
@@ -452,6 +457,34 @@ Adil: You stop falling in love with their potential and start accepting their re
 </div>
 
 <script>
+// ============================================================
+// FIREBASE SETUP — fill this in with your own project's config
+// (Firebase Console → Project settings → General → Your apps → SDK setup)
+// Everyone who opens this page will read/write the SAME Firestore
+// project, which is what makes the Projects tab shared.
+// ============================================================
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+let db = null;
+let firebaseReady = false;
+try{
+  if(firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY"){
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    firebaseReady = true;
+  }
+} catch(e){
+  console.warn('Firebase init failed:', e);
+  firebaseReady = false;
+}
+
 // ---------- state ----------
 let videoFile = null;
 let scriptLines = []; // {speaker, text}
@@ -1123,83 +1156,96 @@ document.addEventListener('keydown', (e)=>{
   if(e.key === 'Escape' && lightboxOverlay.classList.contains('open')) closeLightbox();
 });
 
-// ---------- persistent history (grouped into projects) ----------
-// "project-index" holds lightweight metadata for every saved project (title, date,
-// and a list of {id,label} slide references). Each slide's image is stored
-// separately under its own "history-img:<id>" key so a large project never has
-// to be rewritten wholesale just to add or remove one slide.
-async function getProjectIndex(){
-  try{
-    const raw = await storageGet('project-index', true);
-    return raw ? JSON.parse(raw) : [];
-  } catch(e){ return []; }
-}
-async function setProjectIndex(list){
-  return storageSet('project-index', JSON.stringify(list), true);
-}
+// ---------- shared project storage (Firestore) ----------
+// Collection "projects": one doc per project {title, savedAt, order}
+// Subcollection "projects/{id}/slides": one doc per slide {label, dataURL, order}
+// Split this way so a project with several large images never has to be
+// rewritten as one giant document (Firestore caps a single doc at 1MB).
 
 async function pushProjectToHistory(title, slideItems){
   // slideItems: [{dataURL, label}]
+  if(!firebaseReady){
+    alert('Shared Projects isn\'t set up yet — see the setup note in the Projects tab. The download itself still worked.');
+    return false;
+  }
   try{
-    const savedSlides = [];
-    for(const item of slideItems){
-      const id = Date.now() + '_' + Math.random().toString(36).slice(2);
-      const ok = await storageSet('history-img:' + id, item.dataURL, true);
-      if(!ok) throw new Error('image save failed');
-      savedSlides.push({ id, label: item.label });
-    }
-    const projects = await getProjectIndex();
-    projects.push({
-      projectId: Date.now() + '_' + Math.random().toString(36).slice(2),
-      title: title && title.trim() ? title.trim() : `Untitled project ${projects.length + 1}`,
-      savedAt: new Date().toISOString(),
-      slides: savedSlides
+    const projectRef = await db.collection('projects').add({
+      title: title && title.trim() ? title.trim() : 'Untitled project',
+      savedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
-    await setProjectIndex(projects);
+    const batch = db.batch();
+    slideItems.forEach((item, i)=>{
+      const slideRef = projectRef.collection('slides').doc();
+      batch.set(slideRef, { label: item.label || '', dataURL: item.dataURL, order: i });
+    });
+    await batch.commit();
     return true;
   } catch(e){
-    console.warn('Could not save project to history:', e);
-    alert('Could not save this project to Projects history (storage full or unavailable). The download itself still worked.');
+    console.warn('Could not save project to Firestore:', e);
+    alert('Could not save this project to shared Projects (' + (e.message || 'unknown error') + '). The download itself still worked.');
     return false;
   }
 }
 
 async function getProjects(){
-  const projects = await getProjectIndex();
-  const full = await Promise.all(projects.map(async proj=>{
-    const slides = await Promise.all(proj.slides.map(async s=>{
-      const dataURL = await storageGet('history-img:' + s.id, true);
-      return { ...s, dataURL };
-    }));
-    return { ...proj, slides: slides.filter(s=>s.dataURL) };
+  if(!firebaseReady) return [];
+  const snap = await db.collection('projects').orderBy('savedAt', 'desc').get();
+  const projects = await Promise.all(snap.docs.map(async doc=>{
+    const data = doc.data();
+    const slidesSnap = await doc.ref.collection('slides').orderBy('order','asc').get();
+    const slides = slidesSnap.docs.map(s=>({ id: s.id, ...s.data() }));
+    return {
+      projectId: doc.id,
+      title: data.title,
+      savedAt: data.savedAt ? data.savedAt.toDate().toISOString() : new Date().toISOString(),
+      slides
+    };
   }));
-  return full;
+  return projects;
 }
 
 async function deleteProject(projectId){
-  const projects = await getProjectIndex();
-  const proj = projects.find(p=>p.projectId === projectId);
-  if(proj){
-    await Promise.all(proj.slides.map(s=>storageDelete('history-img:' + s.id, true)));
-  }
-  await setProjectIndex(projects.filter(p=>p.projectId !== projectId));
+  if(!firebaseReady) return;
+  const projectRef = db.collection('projects').doc(projectId);
+  const slidesSnap = await projectRef.collection('slides').get();
+  const batch = db.batch();
+  slidesSnap.docs.forEach(d=>batch.delete(d.ref));
+  batch.delete(projectRef);
+  await batch.commit();
 }
 
 async function clearHistory(){
-  const projects = await getProjectIndex();
-  await Promise.all(projects.flatMap(p=>p.slides.map(s=>storageDelete('history-img:' + s.id, true))));
-  await setProjectIndex([]);
+  if(!firebaseReady) return;
+  const snap = await db.collection('projects').get();
+  for(const doc of snap.docs){
+    await deleteProject(doc.id);
+  }
 }
 
 async function renderHistoryGallery(){
   const gallery = document.getElementById('historyGallery');
-  const projects = await getProjects();
+  const setupNote = document.getElementById('firebaseSetupNote');
+  if(!firebaseReady){
+    setupNote.style.display = 'block';
+    gallery.innerHTML = '';
+    return;
+  }
+  setupNote.style.display = 'none';
+
+  let projects;
+  try{
+    projects = await getProjects();
+  } catch(e){
+    gallery.innerHTML = `<p style="color:var(--tally);font-size:13px;">Couldn't load projects (${e.message || e}). Check your Firestore security rules.</p>`;
+    return;
+  }
+
   gallery.innerHTML = '';
   if(projects.length === 0){
     gallery.innerHTML = '<p style="color:var(--muted);font-size:13px;">No previous projects yet — download a ZIP from step 05 to save your first one here.</p>';
     return;
   }
-  projects.slice().reverse().forEach(proj=>{
+  projects.forEach(proj=>{
     const card = document.createElement('div');
     card.className = 'project-card';
     const when = new Date(proj.savedAt).toLocaleString();
@@ -1238,7 +1284,7 @@ async function renderHistoryGallery(){
 
   gallery.querySelectorAll('.deleteProjectBtn').forEach(btn=>{
     btn.addEventListener('click', async ()=>{
-      if(confirm('Delete this project? This can\'t be undone.')){
+      if(confirm('Delete this project? This can\'t be undone, and it deletes it for everyone sharing this link.')){
         await deleteProject(btn.dataset.id);
         renderHistoryGallery();
       }
@@ -1247,7 +1293,7 @@ async function renderHistoryGallery(){
 }
 
 document.getElementById('clearHistoryBtn').addEventListener('click', async ()=>{
-  if(confirm('Clear all previous projects? This can\'t be undone.')){
+  if(confirm('Clear ALL projects for everyone sharing this link? This can\'t be undone.')){
     await clearHistory();
     renderHistoryGallery();
   }
