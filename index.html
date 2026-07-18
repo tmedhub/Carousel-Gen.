@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Carousel Gen.</title>
+<title>Carousel Cutter</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -179,7 +179,7 @@
 
   .slide-card{
     display:grid;
-    grid-template-columns:1fr 1fr 260px;
+    grid-template-columns:1fr 1fr 320px;
     gap:16px;
     border:1px solid var(--line);
     border-radius:8px;
@@ -203,6 +203,9 @@
 
   .slide-preview{display:flex;flex-direction:column;align-items:center;gap:8px;}
   .slide-preview canvas{width:100%;border-radius:6px;border:1px solid var(--line);}
+  .edit-text-block{width:100%;margin-top:6px;}
+  .edit-text-block textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:6px;color:var(--text);font-family:'Inter',sans-serif;font-size:12px;padding:8px;resize:vertical;margin-bottom:6px;}
+  .edit-text-block button{width:100%;}
 
   .gallery{
     display:grid;
@@ -276,6 +279,7 @@ Adil: You stop falling in love with their potential and start accepting their re
       <div>
         <label class="field">Custom font file (.ttf/.otf) — optional</label>
         <input type="file" id="fontInput" accept=".ttf,.otf,.woff,.woff2">
+        <div class="hint" id="fontStatus" style="margin-top:4px;"></div>
       </div>
       <div>
         <label class="field">Caption size (px, at 1080 canvas width)</label>
@@ -286,15 +290,15 @@ Adil: You stop falling in love with their potential and start accepting their re
         <input type="text" id="textColor" value="#FFFFFF" style="width:100px;">
       </div>
       <div>
-        <label class="field">Glow color</label>
-        <input type="text" id="glowColor" value="#FFFFFF" style="width:100px;">
+        <label class="field">Shadow color</label>
+        <input type="text" id="shadowColor" value="#000000" style="width:100px;">
       </div>
       <div>
-        <label class="field">Glow intensity (0–1)</label>
-        <input type="number" id="glowIntensity" value="1.0" step="0.1" min="0" max="1" style="width:80px;">
+        <label class="field">Drop (0 = no shadow)</label>
+        <input type="number" id="dropAmount" value="4" step="1" min="0" style="width:80px;">
       </div>
     </div>
-    <p class="hint" style="color:var(--muted);font-size:12px;">Default: bold italic, white text, white glow at full intensity — matches your existing carousel style. Font falls back to Helvetica/Arial Bold Italic if no file is uploaded.</p>
+    <p class="hint" style="color:var(--muted);font-size:12px;">Default: bold italic, white text, small drop shadow. Set Drop to 0 for flat text with no shadow at all. Font falls back to Helvetica/Arial Bold Italic if no file is uploaded.</p>
     <div class="footer-actions">
       <button class="primary" id="toCaptureBtn">Continue to capture &amp; compose →</button>
     </div>
@@ -446,22 +450,60 @@ document.getElementById('parseScriptBtn').addEventListener('click', ()=>{
 });
 
 // ---------- step 3: style ----------
-document.getElementById('fontInput').addEventListener('change', async e=>{
-  const file = e.target.files[0];
-  if(!file) return;
-  const buf = await file.arrayBuffer();
+const FONT_KEY = 'carouselCutter_font_v1';
+
+function arrayBufferToBase64(buf){
+  let binary = '';
+  const bytes = new Uint8Array(buf);
+  const chunk = 0x8000;
+  for(let i=0;i<bytes.length;i+=chunk){
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i+chunk));
+  }
+  return btoa(binary);
+}
+function base64ToArrayBuffer(b64){
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for(let i=0;i<binary.length;i++) bytes[i] = binary.charCodeAt(i);
+  return bytes.buffer;
+}
+
+async function applyFontBuffer(buf, name){
   const font = new FontFace('CaptionFont', buf);
   await font.load();
   document.fonts.add(font);
   customFontLoaded = true;
+  document.getElementById('fontStatus').textContent = `Using: ${name}`;
+}
+
+document.getElementById('fontInput').addEventListener('change', async e=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const buf = await file.arrayBuffer();
+  await applyFontBuffer(buf, file.name);
+  try{
+    localStorage.setItem(FONT_KEY, JSON.stringify({ name: file.name, base64: arrayBufferToBase64(buf) }));
+  } catch(e){
+    console.warn('Could not save font for next time (storage full):', e);
+  }
 });
+
+// on load, restore a previously saved font so it doesn't need re-uploading each time
+(function restoreSavedFont(){
+  try{
+    const saved = JSON.parse(localStorage.getItem(FONT_KEY) || 'null');
+    if(saved){
+      applyFontBuffer(base64ToArrayBuffer(saved.base64), saved.name + ' (saved)');
+    }
+  } catch(e){ /* ignore */ }
+})();
 
 function getStyleConfig(){
   return {
     fontSize: parseInt(document.getElementById('fontSize').value) || 44,
     textColor: document.getElementById('textColor').value || '#FFFFFF',
-    glowColor: document.getElementById('glowColor').value || '#FFFFFF',
-    glowIntensity: parseFloat(document.getElementById('glowIntensity').value) || 1.0,
+    shadowColor: document.getElementById('shadowColor').value || '#000000',
+    dropAmount: parseFloat(document.getElementById('dropAmount').value) || 0,
     fontFamily: customFontLoaded ? 'CaptionFont' : 'Arial'
   };
 }
@@ -571,9 +613,34 @@ function renderSlideCards(){
       <div class="slide-preview">
         <canvas class="slideCanvas" data-idx="${idx}" width="1080" height="1350"></canvas>
         <button class="composeBtn" data-idx="${idx}">Compose slide</button>
+        <div class="edit-text-block">
+          <label class="field">Top caption (use Enter for a manual line break)</label>
+          <textarea class="editTopText" data-idx="${idx}" rows="2">${slide.top.text}</textarea>
+          ${slide.bottom ? `<label class="field">Bottom caption</label>
+          <textarea class="editBottomText" data-idx="${idx}" rows="2">${slide.bottom.text}</textarea>` : ''}
+          <button class="applyEditBtn" data-idx="${idx}">Apply text &amp; recompose</button>
+        </div>
       </div>
     `;
     container.appendChild(card);
+  });
+
+  container.querySelectorAll('.applyEditBtn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const idx = parseInt(btn.dataset.idx);
+      const topTa = container.querySelector(`.editTopText[data-idx="${idx}"]`);
+      const bottomTa = container.querySelector(`.editBottomText[data-idx="${idx}"]`);
+      slides[idx].top.text = topTa.value;
+      if(slides[idx].bottom && bottomTa) slides[idx].bottom.text = bottomTa.value;
+      // keep the visible quote preview in sync without a full rebuild
+      const topQuoteEl = container.querySelector(`.half-capture[data-idx="${idx}"][data-half="top"] .line-text`);
+      if(topQuoteEl) topQuoteEl.textContent = `"${slides[idx].top.text}"`;
+      if(slides[idx].bottom){
+        const bottomQuoteEl = container.querySelector(`.half-capture[data-idx="${idx}"][data-half="bottom"] .line-text`);
+        if(bottomQuoteEl) bottomQuoteEl.textContent = `"${slides[idx].bottom.text}"`;
+      }
+      composeSlide(idx);
+    });
   });
 
   container.querySelectorAll('.copyBtn').forEach(btn=>{
@@ -737,20 +804,24 @@ function paintThumb(idx, half){
 }
 
 function wrapLines(ctx, text, maxWidth){
-  const words = text.split(' ');
+  // respect manual line breaks the user typed, then word-wrap each resulting line for overflow
+  const manualLines = text.split('\n');
   const lines = [];
-  let cur = '';
-  for(const w of words){
-    const test = cur ? cur+' '+w : w;
-    if(ctx.measureText(test).width > maxWidth && cur){
-      lines.push(cur); cur = w;
-    } else { cur = test; }
-  }
-  if(cur) lines.push(cur);
+  manualLines.forEach(manualLine=>{
+    const words = manualLine.split(' ');
+    let cur = '';
+    for(const w of words){
+      const test = cur ? cur+' '+w : w;
+      if(ctx.measureText(test).width > maxWidth && cur){
+        lines.push(cur); cur = w;
+      } else { cur = test; }
+    }
+    lines.push(cur);
+  });
   return lines;
 }
 
-function drawGlowCaption(ctx, text, cx, bottomY, maxWidth, style){
+function drawCaption(ctx, text, cx, bottomY, maxWidth, style){
   const font = `italic bold ${style.fontSize}px "${style.fontFamily}", Arial, sans-serif`;
   ctx.font = font;
   ctx.textAlign = 'center';
@@ -761,13 +832,13 @@ function drawGlowCaption(ctx, text, cx, bottomY, maxWidth, style){
   lines.forEach((line, i)=>{
     const y = startY + i*lineHeight;
     ctx.save();
-    ctx.shadowColor = style.glowColor;
-    ctx.shadowBlur = 18 * style.glowIntensity;
-    ctx.fillStyle = style.textColor;
-    for(let p=0;p<Math.round(2*style.glowIntensity)+1;p++){
-      ctx.fillText(line, cx, y);
+    if(style.dropAmount > 0){
+      ctx.shadowColor = style.shadowColor;
+      ctx.shadowOffsetX = style.dropAmount;
+      ctx.shadowOffsetY = style.dropAmount;
+      ctx.shadowBlur = style.dropAmount;
     }
-    ctx.shadowBlur = 0;
+    ctx.fillStyle = style.textColor;
     ctx.fillText(line, cx, y);
     ctx.restore();
   });
@@ -799,9 +870,9 @@ function composeSlide(idx){
       ctx.fillRect(0, halfH-1, W, 2);
     }
 
-    drawGlowCaption(ctx, slide.top.text, W/2, (slide.bottom?halfH:H) - 60, W-120, style);
+    drawCaption(ctx, slide.top.text, W/2, (slide.bottom?halfH:H) - 60, W-120, style);
     if(slide.bottom){
-      drawGlowCaption(ctx, slide.bottom.text, W/2, H - 60, W-120, style);
+      drawCaption(ctx, slide.bottom.text, W/2, H - 60, W-120, style);
     }
 
     slide.composedDataURL = canvas.toDataURL('image/png');
