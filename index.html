@@ -192,6 +192,11 @@
   .half-capture .line-text{font-size:13px;color:var(--paper);margin-bottom:10px;line-height:1.4;}
   .thumb{width:100%;aspect-ratio:1080/675;background:#0c0c0f;border-radius:6px;object-fit:cover;margin-bottom:8px;display:block;}
   .thumb.empty{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;}
+  canvas.thumb{cursor:crosshair;}
+  .zoom-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+  .zoom-row .hint{font-size:11px;color:var(--muted);white-space:nowrap;}
+  .zoom-row input[type=range]{flex:1;}
+  div.hint{font-size:11px;color:var(--muted);margin-bottom:8px;}
 
   .slide-preview{display:flex;flex-direction:column;align-items:center;gap:8px;}
   .slide-preview canvas{width:100%;border-radius:6px;border:1px solid var(--line);}
@@ -318,6 +323,7 @@ Adil: You stop falling in love with their potential and start accepting their re
     <div class="footer-actions">
       <button class="primary" id="downloadZipBtn">Download all as ZIP</button>
     </div>
+    <p class="sub" style="margin:8px 0 0;">If your browser flags the ZIP as unsafe, that's a false positive (common for auto-generated ZIPs) — click "Keep anyway," or just download each slide as an individual PNG below instead.</p>
     <div class="gallery" id="exportGallery"></div>
   </section>
 
@@ -485,7 +491,12 @@ function renderSlideCards(){
         <h4>Top — ${slide.top.speaker}</h4>
         <div class="line-text">"${slide.top.text}"</div>
         ${slide.top.frameDataURL
-          ? `<img class="thumb" src="${slide.top.frameDataURL}">`
+          ? `<canvas class="thumb thumbCanvas" data-idx="${idx}" data-half="top"></canvas>
+             <div class="zoom-row">
+               <span class="hint">Zoom</span>
+               <input type="range" class="zoomSlider" data-idx="${idx}" data-half="top" min="1" max="3" step="0.05" value="${slide.top.zoom}">
+             </div>
+             <div class="hint">Click the frame to re-center on a face</div>`
           : `<div class="thumb empty">No frame captured yet</div>`}
         <button class="captureBtn" data-idx="${idx}" data-half="top">Capture frame at ${fmtTime(vp.currentTime)}</button>
       </div>
@@ -493,7 +504,12 @@ function renderSlideCards(){
         <h4>Bottom — ${slide.bottom ? slide.bottom.speaker : '—'}</h4>
         <div class="line-text">${slide.bottom ? '"'+slide.bottom.text+'"' : 'No pair (odd line out)'}</div>
         ${slide.bottom ? `${slide.bottom.frameDataURL
-          ? `<img class="thumb" src="${slide.bottom.frameDataURL}">`
+          ? `<canvas class="thumb thumbCanvas" data-idx="${idx}" data-half="bottom"></canvas>
+             <div class="zoom-row">
+               <span class="hint">Zoom</span>
+               <input type="range" class="zoomSlider" data-idx="${idx}" data-half="bottom" min="1" max="3" step="0.05" value="${slide.bottom.zoom}">
+             </div>
+             <div class="hint">Click the frame to re-center on a face</div>`
           : `<div class="thumb empty">No frame captured yet</div>`}
         <button class="captureBtn" data-idx="${idx}" data-half="bottom">Capture frame at ${fmtTime(vp.currentTime)}</button>` : ''}
       </div>
@@ -511,6 +527,9 @@ function renderSlideCards(){
       const half = btn.dataset.half;
       const dataURL = captureCurrentFrame();
       slides[idx][half].frameDataURL = dataURL;
+      slides[idx][half].zoom = slides[idx][half].zoom || 1.6;
+      slides[idx][half].centerX = slides[idx][half].centerX ?? 0.5;
+      slides[idx][half].centerY = slides[idx][half].centerY ?? 0.35;
       renderSlideCards();
     });
   });
@@ -518,6 +537,47 @@ function renderSlideCards(){
     btn.addEventListener('click', ()=>{
       const idx = parseInt(btn.dataset.idx);
       composeSlide(idx);
+    });
+  });
+
+  // paint zoomed thumbnails
+  container.querySelectorAll('.thumbCanvas').forEach(c=>{
+    paintThumb(parseInt(c.dataset.idx), c.dataset.half);
+  });
+
+  // zoom sliders
+  container.querySelectorAll('.zoomSlider').forEach(sl=>{
+    sl.addEventListener('input', ()=>{
+      const idx = parseInt(sl.dataset.idx), half = sl.dataset.half;
+      slides[idx][half].zoom = parseFloat(sl.value);
+      paintThumb(idx, half);
+    });
+  });
+
+  // click-to-recenter on the zoomed thumbnail
+  container.querySelectorAll('.thumbCanvas').forEach(c=>{
+    c.addEventListener('click', (e)=>{
+      const idx = parseInt(c.dataset.idx), half = c.dataset.half;
+      const rect = c.getBoundingClientRect();
+      const clickXFrac = (e.clientX - rect.left) / rect.width;
+      const clickYFrac = (e.clientY - rect.top) / rect.height;
+      const s = slides[idx][half];
+      // convert click position within the *current zoomed view* back into a source-image fraction
+      const img = imgCache[s.frameDataURL];
+      if(!img) return;
+      const tr = rect.width/rect.height;
+      const ir = img.width/img.height;
+      let baseW, baseH;
+      if(ir > tr){ baseH = img.height; baseW = baseH*tr; } else { baseW = img.width; baseH = baseW/tr; }
+      const sw = baseW / s.zoom, sh = baseH / s.zoom;
+      let sx = (s.centerX ?? 0.5)*img.width - sw/2;
+      let sy = (s.centerY ?? 0.5)*img.height - sh/2;
+      sx = Math.max(0, Math.min(img.width - sw, sx));
+      sy = Math.max(0, Math.min(img.height - sh, sy));
+      const newCx = (sx + clickXFrac*sw) / img.width;
+      const newCy = (sy + clickYFrac*sh) / img.height;
+      s.centerX = newCx; s.centerY = newCy;
+      paintThumb(idx, half);
     });
   });
 }
@@ -528,6 +588,47 @@ function drawCover(ctx, img, x, y, w, h){
   if(ir > tr){ sh = img.height; sw = sh*tr; sx = (img.width-sw)/2; sy = 0; }
   else { sw = img.width; sh = sw/tr; sx = 0; sy = (img.height-sh)/2; }
   ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+}
+
+// like drawCover, but additionally zooms in on and re-centers around a point (cx,cy as 0-1 fractions of the source image)
+function drawZoomedCover(ctx, img, x, y, w, h, zoom, cx, cy){
+  const tr = w/h;
+  const ir = img.width/img.height;
+  let baseW, baseH;
+  if(ir > tr){ baseH = img.height; baseW = baseH*tr; }
+  else { baseW = img.width; baseH = baseW/tr; }
+  const z = Math.max(1, zoom || 1);
+  const sw = baseW / z;
+  const sh = baseH / z;
+  let sx = (cx ?? 0.5)*img.width - sw/2;
+  let sy = (cy ?? 0.5)*img.height - sh/2;
+  sx = Math.max(0, Math.min(img.width - sw, sx));
+  sy = Math.max(0, Math.min(img.height - sh, sy));
+  ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+}
+
+const imgCache = {}; // dataURL -> Image
+function loadCachedImg(src){
+  if(imgCache[src]) return Promise.resolve(imgCache[src]);
+  return new Promise(res=>{
+    const im = new Image();
+    im.onload = ()=>{ imgCache[src] = im; res(im); };
+    im.src = src;
+  });
+}
+
+function paintThumb(idx, half){
+  const half_obj = slides[idx][half];
+  if(!half_obj || !half_obj.frameDataURL) return;
+  const canvas = document.querySelector(`.thumbCanvas[data-idx="${idx}"][data-half="${half}"]`);
+  if(!canvas) return;
+  const rect = canvas.getBoundingClientRect();
+  const w = canvas.width = Math.round(rect.width) || 400;
+  const h = canvas.height = Math.round(w * 675/1080);
+  loadCachedImg(half_obj.frameDataURL).then(img=>{
+    const ctx = canvas.getContext('2d');
+    drawZoomedCover(ctx, img, 0, 0, w, h, half_obj.zoom, half_obj.centerX, half_obj.centerY);
+  });
 }
 
 function wrapLines(ctx, text, maxWidth){
@@ -582,11 +683,11 @@ function composeSlide(idx){
     slide.top.frameDataURL ? loadImg(slide.top.frameDataURL) : null,
     slide.bottom && slide.bottom.frameDataURL ? loadImg(slide.bottom.frameDataURL) : null
   ]).then(([topImg, bottomImg])=>{
-    if(topImg){ drawCover(ctx, topImg, 0, 0, W, slide.bottom ? halfH : H); }
+    if(topImg){ drawZoomedCover(ctx, topImg, 0, 0, W, slide.bottom ? halfH : H, slide.top.zoom, slide.top.centerX, slide.top.centerY); }
     else { ctx.fillStyle = '#000'; ctx.fillRect(0,0,W,slide.bottom?halfH:H); }
 
     if(slide.bottom){
-      if(bottomImg){ drawCover(ctx, bottomImg, 0, halfH, W, halfH); }
+      if(bottomImg){ drawZoomedCover(ctx, bottomImg, 0, halfH, W, halfH, slide.bottom.zoom, slide.bottom.centerX, slide.bottom.centerY); }
       else { ctx.fillStyle = '#000'; ctx.fillRect(0,halfH,W,halfH); }
       // divider
       ctx.fillStyle = 'rgba(255,255,255,0.15)';
@@ -609,7 +710,19 @@ function renderExportGallery(){
   slides.forEach((slide, idx)=>{
     if(!slide.composedDataURL) return;
     const fig = document.createElement('figure');
-    fig.innerHTML = `<img src="${slide.composedDataURL}"><figcaption>slide_${String(idx+1).padStart(2,'0')}.png</figcaption>`;
+    const fname = `slide_${String(idx+1).padStart(2,'0')}.png`;
+    fig.innerHTML = `<img src="${slide.composedDataURL}"><figcaption>${fname}</figcaption>`;
+    const dlBtn = document.createElement('button');
+    dlBtn.textContent = 'Download PNG';
+    dlBtn.style.width = '100%';
+    dlBtn.style.marginTop = '6px';
+    dlBtn.addEventListener('click', ()=>{
+      const a = document.createElement('a');
+      a.href = slide.composedDataURL;
+      a.download = fname;
+      a.click();
+    });
+    fig.appendChild(dlBtn);
     gallery.appendChild(fig);
   });
   if(gallery.children.length === 0){
