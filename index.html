@@ -496,7 +496,7 @@ function renderSlideCards(){
                <span class="hint">Zoom</span>
                <input type="range" class="zoomSlider" data-idx="${idx}" data-half="top" min="1" max="3" step="0.05" value="${slide.top.zoom}">
              </div>
-             <div class="hint">Click the frame to re-center on a face</div>`
+             <div class="hint">Drag to reposition · scroll to zoom</div>`
           : `<div class="thumb empty">No frame captured yet</div>`}
         <button class="captureBtn" data-idx="${idx}" data-half="top">Capture frame at ${fmtTime(vp.currentTime)}</button>
       </div>
@@ -509,7 +509,7 @@ function renderSlideCards(){
                <span class="hint">Zoom</span>
                <input type="range" class="zoomSlider" data-idx="${idx}" data-half="bottom" min="1" max="3" step="0.05" value="${slide.bottom.zoom}">
              </div>
-             <div class="hint">Click the frame to re-center on a face</div>`
+             <div class="hint">Drag to reposition · scroll to zoom</div>`
           : `<div class="thumb empty">No frame captured yet</div>`}
         <button class="captureBtn" data-idx="${idx}" data-half="bottom">Capture frame at ${fmtTime(vp.currentTime)}</button>` : ''}
       </div>
@@ -554,31 +554,61 @@ function renderSlideCards(){
     });
   });
 
-  // click-to-recenter on the zoomed thumbnail
+  // drag-to-pan ("hand tool") + scroll-to-zoom on the zoomed thumbnail
   container.querySelectorAll('.thumbCanvas').forEach(c=>{
-    c.addEventListener('click', (e)=>{
-      const idx = parseInt(c.dataset.idx), half = c.dataset.half;
-      const rect = c.getBoundingClientRect();
-      const clickXFrac = (e.clientX - rect.left) / rect.width;
-      const clickYFrac = (e.clientY - rect.top) / rect.height;
-      const s = slides[idx][half];
-      // convert click position within the *current zoomed view* back into a source-image fraction
-      const img = imgCache[s.frameDataURL];
-      if(!img) return;
+    let dragging = false;
+    let start = null;
+
+    function getSourceExtent(s, img, rect){
       const tr = rect.width/rect.height;
       const ir = img.width/img.height;
       let baseW, baseH;
       if(ir > tr){ baseH = img.height; baseW = baseH*tr; } else { baseW = img.width; baseH = baseW/tr; }
-      const sw = baseW / s.zoom, sh = baseH / s.zoom;
-      let sx = (s.centerX ?? 0.5)*img.width - sw/2;
-      let sy = (s.centerY ?? 0.5)*img.height - sh/2;
-      sx = Math.max(0, Math.min(img.width - sw, sx));
-      sy = Math.max(0, Math.min(img.height - sh, sy));
-      const newCx = (sx + clickXFrac*sw) / img.width;
-      const newCy = (sy + clickYFrac*sh) / img.height;
-      s.centerX = newCx; s.centerY = newCy;
+      return { sw: baseW / s.zoom, sh: baseH / s.zoom };
+    }
+
+    c.style.cursor = 'grab';
+
+    c.addEventListener('pointerdown', (e)=>{
+      const idx = parseInt(c.dataset.idx), half = c.dataset.half;
+      const s = slides[idx][half];
+      dragging = true;
+      c.setPointerCapture(e.pointerId);
+      c.style.cursor = 'grabbing';
+      start = { x:e.clientX, y:e.clientY, cx: s.centerX ?? 0.5, cy: s.centerY ?? 0.5 };
+    });
+
+    c.addEventListener('pointermove', (e)=>{
+      if(!dragging) return;
+      const idx = parseInt(c.dataset.idx), half = c.dataset.half;
+      const s = slides[idx][half];
+      const img = imgCache[s.frameDataURL];
+      if(!img) return;
+      const rect = c.getBoundingClientRect();
+      const { sw, sh } = getSourceExtent(s, img, rect);
+      const dxFrac = (e.clientX - start.x) / rect.width;
+      const dyFrac = (e.clientY - start.y) / rect.height;
+      // dragging right/down should pull the image with the cursor, like grabbing paper
+      s.centerX = Math.max(0, Math.min(1, start.cx - (dxFrac * sw) / img.width));
+      s.centerY = Math.max(0, Math.min(1, start.cy - (dyFrac * sh) / img.height));
       paintThumb(idx, half);
     });
+
+    function endDrag(){ dragging = false; c.style.cursor = 'grab'; }
+    c.addEventListener('pointerup', endDrag);
+    c.addEventListener('pointercancel', endDrag);
+    c.addEventListener('pointerleave', ()=>{ if(dragging) endDrag(); });
+
+    c.addEventListener('wheel', (e)=>{
+      e.preventDefault();
+      const idx = parseInt(c.dataset.idx), half = c.dataset.half;
+      const s = slides[idx][half];
+      const delta = e.deltaY < 0 ? 0.1 : -0.1;
+      s.zoom = Math.max(1, Math.min(3, (s.zoom || 1.6) + delta));
+      const slider = document.querySelector(`.zoomSlider[data-idx="${idx}"][data-half="${half}"]`);
+      if(slider) slider.value = s.zoom;
+      paintThumb(idx, half);
+    }, { passive:false });
   });
 }
 
