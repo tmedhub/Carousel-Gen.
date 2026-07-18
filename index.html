@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CAROUSEL GENERATOR</title>
+<title>Carousel Gen.</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -189,6 +189,7 @@
   }
   .half-capture{border:1px solid var(--line);border-radius:8px;padding:12px;}
   .half-capture h4{margin:0 0 8px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
+  .half-capture h4 .slide-num{color:var(--tally);}
   .half-capture .line-text{font-size:13px;color:var(--paper);margin-bottom:10px;line-height:1.4;}
   .thumb{width:100%;aspect-ratio:1080/675;background:#0c0c0f;border-radius:6px;object-fit:cover;margin-bottom:8px;display:block;}
   .thumb.empty{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;}
@@ -229,7 +230,7 @@
   .caption-editable.top-half.solo{top:76%;bottom:0;}
   .caption-editable.bottom-half{top:76%;bottom:0;}
   .caption-editable:hover{border-color:rgba(45,212,191,0.35);background:rgba(0,0,0,0.15);}
-  .caption-editable:focus{border-color:var(--teal);background:rgba(0,0,0,0.35);color:rgba(255,255,255,0.85);}
+  .caption-editable:focus{border-color:var(--teal);background:#000;color:rgba(255,255,255,0.85);}
   .edit-hint{font-size:11px;color:var(--muted);text-align:center;}
 
   .gallery{
@@ -239,17 +240,85 @@
     margin-top:12px;
   }
   .gallery figure{margin:0;}
-  .gallery img{width:100%;border-radius:6px;border:1px solid var(--line);}
+  .gallery img{width:100%;border-radius:6px;border:1px solid var(--line);cursor:zoom-in;display:block;transition:border-color .15s;}
+  .gallery img:hover{border-color:var(--teal);}
   .gallery figcaption{font-size:11px;color:var(--muted);margin-top:4px;text-align:center;}
 
   .footer-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:10px;}
   .badge{font-size:10px;color:var(--teal);border:1px solid var(--teal);border-radius:3px;padding:2px 6px;}
+
+  .project-title-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+  .project-title-row input[type=text]{flex:1;min-width:200px;}
+
+  .project-card{
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:16px;
+    margin-bottom:18px;
+    background:var(--panel-2);
+  }
+  .project-card-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:12px;
+    flex-wrap:wrap;
+  }
+  .project-card-head h3{
+    font-family:'Bebas Neue',sans-serif;
+    letter-spacing:1px;
+    font-size:20px;
+    margin:0;
+    color:var(--paper);
+  }
+  .project-card-head .meta{font-size:11px;color:var(--muted);}
+  .project-card-head .meta .count{color:var(--teal);}
+
+  /* lightbox */
+  .lightbox-overlay{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.88);
+    z-index:1000;
+    align-items:center;
+    justify-content:center;
+    padding:40px;
+    cursor:zoom-out;
+  }
+  .lightbox-overlay.open{display:flex;}
+  .lightbox-overlay img{
+    max-width:100%;
+    max-height:100%;
+    border-radius:8px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.6);
+  }
+  .lightbox-close{
+    position:absolute;
+    top:20px;
+    right:28px;
+    font-size:28px;
+    color:var(--text);
+    background:none;
+    border:none;
+    cursor:pointer;
+    line-height:1;
+  }
+  .lightbox-caption{
+    position:absolute;
+    bottom:24px;
+    left:0;right:0;
+    text-align:center;
+    color:var(--muted);
+    font-size:13px;
+  }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>CAROUSEL CUTTER</h1>
+  <h1>CAROUSEL GENERATOR</h1>
 </header>
 
 <div class="steps">
@@ -350,7 +419,11 @@ Adil: You stop falling in love with their potential and start accepting their re
   <!-- STEP 5: EXPORT -->
   <section class="panel step-panel" id="panel-5" style="display:none;">
     <h2>Export</h2>
-    <p class="sub">Every composed slide from this session, in order.</p>
+    <p class="sub">Every composed slide from this session, in order. Downloading as ZIP saves this whole batch as one project below.</p>
+    <div class="project-title-row">
+      <label class="field" style="margin:0;">Project title</label>
+      <input type="text" id="projectTitleInput" placeholder="e.g. Adil & Sak — ep 12">
+    </div>
     <div class="footer-actions">
       <button class="primary" id="downloadZipBtn">Download all as ZIP</button>
     </div>
@@ -361,7 +434,7 @@ Adil: You stop falling in love with their potential and start accepting their re
   <!-- STEP 6: PROJECTS (persisted history — every slide you've downloaded) -->
   <section class="panel step-panel" id="panel-6" style="display:none;">
     <h2>Projects</h2>
-    <p class="sub">Every slide you've downloaded from this tool, on this computer/browser, saved automatically the moment you download it. Delete anything you don't need anymore.</p>
+    <p class="sub">Every batch you've exported as a ZIP, grouped together with its title, saved automatically on this computer/browser. Click any slide to enlarge it. Delete anything you don't need anymore.</p>
     <div class="footer-actions">
       <button id="clearHistoryBtn">Clear all</button>
     </div>
@@ -371,6 +444,12 @@ Adil: You stop falling in love with their potential and start accepting their re
 </main>
 
 <canvas id="workCanvas" width="1080" height="1350" style="display:none;"></canvas>
+
+<div class="lightbox-overlay" id="lightboxOverlay">
+  <button class="lightbox-close" id="lightboxClose">&times;</button>
+  <img id="lightboxImg" src="" alt="">
+  <div class="lightbox-caption" id="lightboxCaption"></div>
+</div>
 
 <script>
 // ---------- state ----------
@@ -730,7 +809,7 @@ function renderSlideCards(){
     card.className = 'slide-card';
     card.innerHTML = `
       <div class="half-capture" data-idx="${idx}" data-half="top">
-        <h4>Top — ${slide.top.speaker}</h4>
+        <h4><span class="slide-num">Slide ${idx+1}</span> — Top — ${slide.top.speaker}</h4>
         <div class="line-text">"${slide.top.text}"</div>
         ${slide.top.frameDataURL
           ? `<canvas class="thumb thumbCanvas" data-idx="${idx}" data-half="top"></canvas>
@@ -750,7 +829,7 @@ function renderSlideCards(){
         <button class="captureBtn" data-idx="${idx}" data-half="top">Capture frame at ${fmtTime(vp.currentTime)}</button>
       </div>
       <div class="half-capture" data-idx="${idx}" data-half="bottom">
-        <h4>Bottom — ${slide.bottom ? slide.bottom.speaker : '—'}</h4>
+        <h4><span class="slide-num">Slide ${idx+1}</span> — Bottom — ${slide.bottom ? slide.bottom.speaker : '—'}</h4>
         <div class="line-text">${slide.bottom ? '"'+slide.bottom.text+'"' : 'No pair (odd line out)'}</div>
         ${slide.bottom ? `${slide.bottom.frameDataURL
           ? `<canvas class="thumb thumbCanvas" data-idx="${idx}" data-half="bottom"></canvas>
@@ -1022,93 +1101,152 @@ function composeSlide(idx){
   });
 }
 
-// ---------- persistent history ----------
-// A small "history-index" record holds the lightweight metadata for every saved slide,
-// and each slide's image is stored separately under its own "history-img:<id>" key so
-// a single large export never has to be rewritten just to add one new item.
-async function getHistoryIndex(){
+// ---------- lightbox ----------
+const lightboxOverlay = document.getElementById('lightboxOverlay');
+const lightboxImg = document.getElementById('lightboxImg');
+const lightboxCaption = document.getElementById('lightboxCaption');
+function openLightbox(src, caption){
+  lightboxImg.src = src;
+  lightboxCaption.textContent = caption || '';
+  lightboxOverlay.classList.add('open');
+}
+function closeLightbox(){
+  lightboxOverlay.classList.remove('open');
+  lightboxImg.src = '';
+}
+document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
+lightboxOverlay.addEventListener('click', (e)=>{
+  if(e.target === lightboxOverlay) closeLightbox();
+});
+document.addEventListener('keydown', (e)=>{
+  if(e.key === 'Escape' && lightboxOverlay.classList.contains('open')) closeLightbox();
+});
+
+// ---------- persistent history (grouped into projects) ----------
+// "project-index" holds lightweight metadata for every saved project (title, date,
+// and a list of {id,label} slide references). Each slide's image is stored
+// separately under its own "history-img:<id>" key so a large project never has
+// to be rewritten wholesale just to add or remove one slide.
+async function getProjectIndex(){
   try{
-    const raw = await storageGet('history-index');
+    const raw = await storageGet('project-index');
     return raw ? JSON.parse(raw) : [];
   } catch(e){ return []; }
 }
-async function setHistoryIndex(list){
-  return storageSet('history-index', JSON.stringify(list));
+async function setProjectIndex(list){
+  return storageSet('project-index', JSON.stringify(list));
 }
 
-async function pushToHistory(dataURL, label){
+async function pushProjectToHistory(title, slideItems){
+  // slideItems: [{dataURL, label}]
   try{
-    const id = Date.now() + '_' + Math.random().toString(36).slice(2);
-    const savedImg = await storageSet('history-img:' + id, dataURL);
-    if(!savedImg) throw new Error('image save failed');
-    const idx = await getHistoryIndex();
-    idx.push({ id, savedAt: new Date().toISOString(), label });
-    await setHistoryIndex(idx);
+    const savedSlides = [];
+    for(const item of slideItems){
+      const id = Date.now() + '_' + Math.random().toString(36).slice(2);
+      const ok = await storageSet('history-img:' + id, item.dataURL);
+      if(!ok) throw new Error('image save failed');
+      savedSlides.push({ id, label: item.label });
+    }
+    const projects = await getProjectIndex();
+    projects.push({
+      projectId: Date.now() + '_' + Math.random().toString(36).slice(2),
+      title: title && title.trim() ? title.trim() : `Untitled project ${projects.length + 1}`,
+      savedAt: new Date().toISOString(),
+      slides: savedSlides
+    });
+    await setProjectIndex(projects);
+    return true;
   } catch(e){
-    console.warn('Could not save to Projects history:', e);
-    alert('Could not save this to Projects history (storage full or unavailable). The download itself still worked.');
+    console.warn('Could not save project to history:', e);
+    alert('Could not save this project to Projects history (storage full or unavailable). The download itself still worked.');
+    return false;
   }
 }
 
-async function getHistory(){
-  const idx = await getHistoryIndex();
-  const items = await Promise.all(idx.map(async meta=>{
-    const dataURL = await storageGet('history-img:' + meta.id);
-    return { ...meta, dataURL };
+async function getProjects(){
+  const projects = await getProjectIndex();
+  const full = await Promise.all(projects.map(async proj=>{
+    const slides = await Promise.all(proj.slides.map(async s=>{
+      const dataURL = await storageGet('history-img:' + s.id);
+      return { ...s, dataURL };
+    }));
+    return { ...proj, slides: slides.filter(s=>s.dataURL) };
   }));
-  return items.filter(it=>it.dataURL);
+  return full;
 }
 
-async function deleteHistoryItem(id){
-  await storageDelete('history-img:' + id);
-  const idx = await getHistoryIndex();
-  await setHistoryIndex(idx.filter(it=>it.id !== id));
+async function deleteProject(projectId){
+  const projects = await getProjectIndex();
+  const proj = projects.find(p=>p.projectId === projectId);
+  if(proj){
+    await Promise.all(proj.slides.map(s=>storageDelete('history-img:' + s.id)));
+  }
+  await setProjectIndex(projects.filter(p=>p.projectId !== projectId));
 }
 
 async function clearHistory(){
-  const idx = await getHistoryIndex();
-  await Promise.all(idx.map(it=>storageDelete('history-img:' + it.id)));
-  await setHistoryIndex([]);
+  const projects = await getProjectIndex();
+  await Promise.all(projects.flatMap(p=>p.slides.map(s=>storageDelete('history-img:' + s.id))));
+  await setProjectIndex([]);
 }
 
 async function renderHistoryGallery(){
   const gallery = document.getElementById('historyGallery');
-  const history = await getHistory();
+  const projects = await getProjects();
   gallery.innerHTML = '';
-  if(history.length === 0){
-    gallery.innerHTML = '<p style="color:var(--muted);font-size:13px;">No previous exports yet — composed slides will start collecting here automatically.</p>';
+  if(projects.length === 0){
+    gallery.innerHTML = '<p style="color:var(--muted);font-size:13px;">No previous projects yet — download a ZIP from step 05 to save your first one here.</p>';
     return;
   }
-  history.slice().reverse().forEach(item=>{
-    const fig = document.createElement('figure');
-    const when = new Date(item.savedAt).toLocaleString();
-    fig.innerHTML = `<img src="${item.dataURL}"><figcaption>${item.label || ''}<br>${when}</figcaption>`;
-    const dlBtn = document.createElement('button');
-    dlBtn.textContent = 'Download PNG';
-    dlBtn.style.width = '100%';
-    dlBtn.style.marginTop = '6px';
-    dlBtn.addEventListener('click', ()=>{
-      const a = document.createElement('a');
-      a.href = item.dataURL;
-      a.download = `carousel_${item.id}.png`;
-      a.click();
+  projects.slice().reverse().forEach(proj=>{
+    const card = document.createElement('div');
+    card.className = 'project-card';
+    const when = new Date(proj.savedAt).toLocaleString();
+    card.innerHTML = `
+      <div class="project-card-head">
+        <h3>${escapeHTML(proj.title)}</h3>
+        <div class="meta"><span class="count">${proj.slides.length} slide${proj.slides.length===1?'':'s'}</span> · ${when}</div>
+      </div>
+      <div class="gallery"></div>
+      <div class="footer-actions">
+        <button class="deleteProjectBtn" data-id="${proj.projectId}">Delete project</button>
+      </div>
+    `;
+    const galleryEl = card.querySelector('.gallery');
+    proj.slides.forEach((item, i)=>{
+      const fig = document.createElement('figure');
+      fig.innerHTML = `<img src="${item.dataURL}" alt="${escapeHTML(item.label||'')}"><figcaption>${item.label ? escapeHTML(item.label) : `Slide ${i+1}`}</figcaption>`;
+      fig.querySelector('img').addEventListener('click', ()=>{
+        openLightbox(item.dataURL, `${proj.title} — ${item.label ? item.label : 'Slide '+(i+1)}`);
+      });
+      const dlBtn = document.createElement('button');
+      dlBtn.textContent = 'Download PNG';
+      dlBtn.style.width = '100%';
+      dlBtn.style.marginTop = '6px';
+      dlBtn.addEventListener('click', ()=>{
+        const a = document.createElement('a');
+        a.href = item.dataURL;
+        a.download = `${proj.title.replace(/[^a-z0-9]+/gi,'_')}_${String(i+1).padStart(2,'0')}.png`;
+        a.click();
+      });
+      fig.appendChild(dlBtn);
+      galleryEl.appendChild(fig);
     });
-    const delBtn = document.createElement('button');
-    delBtn.textContent = 'Delete';
-    delBtn.style.width = '100%';
-    delBtn.style.marginTop = '4px';
-    delBtn.addEventListener('click', async ()=>{
-      await deleteHistoryItem(item.id);
-      renderHistoryGallery();
+    gallery.appendChild(card);
+  });
+
+  gallery.querySelectorAll('.deleteProjectBtn').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      if(confirm('Delete this project? This can\'t be undone.')){
+        await deleteProject(btn.dataset.id);
+        renderHistoryGallery();
+      }
     });
-    fig.appendChild(dlBtn);
-    fig.appendChild(delBtn);
-    gallery.appendChild(fig);
   });
 }
 
 document.getElementById('clearHistoryBtn').addEventListener('click', async ()=>{
-  if(confirm('Clear all previous exports? This can\'t be undone.')){
+  if(confirm('Clear all previous projects? This can\'t be undone.')){
     await clearHistory();
     renderHistoryGallery();
   }
@@ -1122,7 +1260,11 @@ function renderExportGallery(){
     if(!slide.composedDataURL) return;
     const fig = document.createElement('figure');
     const fname = `slide_${String(idx+1).padStart(2,'0')}.png`;
+    const label = `Slide ${idx+1} — ${slide.top.speaker}${slide.bottom ? ' + '+slide.bottom.speaker : ''}`;
     fig.innerHTML = `<img src="${slide.composedDataURL}"><figcaption>${fname}</figcaption>`;
+    fig.querySelector('img').addEventListener('click', ()=>{
+      openLightbox(slide.composedDataURL, label);
+    });
     const dlBtn = document.createElement('button');
     dlBtn.textContent = 'Download PNG';
     dlBtn.style.width = '100%';
@@ -1132,7 +1274,6 @@ function renderExportGallery(){
       a.href = slide.composedDataURL;
       a.download = fname;
       a.click();
-      pushToHistory(slide.composedDataURL, `${slide.top.speaker}${slide.bottom ? ' + '+slide.bottom.speaker : ''}`);
     });
     fig.appendChild(dlBtn);
     gallery.appendChild(fig);
@@ -1144,24 +1285,28 @@ function renderExportGallery(){
 
 document.getElementById('downloadZipBtn').addEventListener('click', async ()=>{
   const zip = new JSZip();
-  let count = 0;
+  const slideItems = [];
   slides.forEach((slide, idx)=>{
     if(!slide.composedDataURL) return;
     const base64 = slide.composedDataURL.split(',')[1];
     zip.file(`slide_${String(idx+1).padStart(2,'0')}.png`, base64, {base64:true});
-    count++;
+    slideItems.push({
+      dataURL: slide.composedDataURL,
+      label: `Slide ${idx+1} — ${slide.top.speaker}${slide.bottom ? ' + '+slide.bottom.speaker : ''}`
+    });
   });
-  if(count===0){ alert('No composed slides to export yet.'); return; }
+  if(slideItems.length===0){ alert('No composed slides to export yet.'); return; }
+
+  const titleInput = document.getElementById('projectTitleInput');
+  const title = titleInput.value;
+
   const blob = await zip.generateAsync({type:'blob'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'carousel_slides.zip';
+  a.download = `${(title && title.trim() ? title.trim() : 'carousel_slides').replace(/[^a-z0-9]+/gi,'_')}.zip`;
   a.click();
-  slides.forEach(slide=>{
-    if(slide.composedDataURL){
-      pushToHistory(slide.composedDataURL, `${slide.top.speaker}${slide.bottom ? ' + '+slide.bottom.speaker : ''}`);
-    }
-  });
+
+  await pushProjectToHistory(title, slideItems);
 });
 
 document.getElementById('toCaptureBtn').addEventListener('click', ()=>{
