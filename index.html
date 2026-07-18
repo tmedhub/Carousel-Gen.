@@ -3,12 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Carousel Gen</title>
+<title>Carousel Cutter</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
   :root{
     --bg: #15151a;
@@ -320,7 +318,7 @@
 <body>
 
 <header>
-  <h1>CAROUSEL GENERATOR</h1>
+  <h1>CAROUSEL CUTTER</h1>
 </header>
 
 <div class="steps">
@@ -433,13 +431,11 @@ Adil: You stop falling in love with their potential and start accepting their re
     <div class="gallery" id="exportGallery"></div>
   </section>
 
-  <!-- STEP 6: PROJECTS (persisted history — every slide you've downloaded) -->
+  <!-- STEP 6: PROJECTS (shared history — every project anyone has downloaded) -->
   <section class="panel step-panel" id="panel-6" style="display:none;">
     <h2>Projects</h2>
     <p class="sub">Every batch you've exported as a ZIP, grouped together with its title. Click any slide to enlarge it.</p>
-    <div id="firebaseSetupNote" style="display:none;background:var(--panel-2);border:1px solid var(--tally);border-radius:8px;padding:14px 16px;margin-bottom:16px;font-size:13px;color:var(--paper);line-height:1.5;">
-      <strong style="color:var(--tally);">Shared Projects isn't connected yet.</strong> Open this HTML file, find the <code class="mono">firebaseConfig</code> object near the top of the &lt;script&gt; tag, and paste in your own Firebase project's config values. Once that's filled in and the file is re-uploaded to GitHub, everyone opening the link will see the same Projects list.
-    </div>
+    <div id="storageSetupNote" style="display:none;background:var(--panel-2);border:1px solid var(--tally);border-radius:8px;padding:14px 16px;margin-bottom:16px;font-size:13px;color:var(--paper);line-height:1.5;"></div>
     <div class="footer-actions">
       <button id="clearHistoryBtn">Clear all</button>
     </div>
@@ -458,31 +454,60 @@ Adil: You stop falling in love with their potential and start accepting their re
 
 <script>
 // ============================================================
-// FIREBASE SETUP — fill this in with your own project's config
-// (Firebase Console → Project settings → General → Your apps → SDK setup)
-// Everyone who opens this page will read/write the SAME Firestore
-// project, which is what makes the Projects tab shared.
+// SHARED PROJECT STORAGE — powered by jsonbin.io
+//
+// This is what makes the "Projects" tab the SAME for everyone who opens
+// this file, instead of only living in your own browser.
+//
+// One-time setup (takes ~2 minutes, no credit card):
+//   1. Go to https://jsonbin.io and sign up free (Google/GitHub login is fastest).
+//   2. On your Dashboard, open "API Keys" and copy your X-MASTER-KEY.
+//   3. Paste it below as JSONBIN_MASTER_KEY.
+//   4. Save this file, open it, go to the Projects tab, and click
+//      "Create shared project list" — it'll create one small index bin
+//      and show you its ID.
+//   5. Paste that ID below as JSONBIN_INDEX_BIN_ID, save the file again,
+//      and re-upload/re-share it. From then on everyone who opens this
+//      file sees and adds to the same Projects list.
+//
+// Note: the free jsonbin.io plan includes 10,000 API requests to start —
+// plenty for casual/team use, but if this gets heavy traffic you may
+// eventually need to add more requests on their pricing page.
 // ============================================================
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
+const JSONBIN_MASTER_KEY = "$2a$10$7reERGwqtw/i9exNldDHguj79MMVnsLPu7A7ZhJTzp9.AL7aeAYNK";      // <-- paste your X-Master-Key here
+const JSONBIN_INDEX_BIN_ID = "";    // <-- paste your index bin ID here (step 5 above)
 
-let db = null;
-let firebaseReady = false;
-try{
-  if(firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY"){
-    firebase.initializeApp(firebaseConfig);
-    db = firebase.firestore();
-    firebaseReady = true;
+const JSONBIN_BASE = "https://api.jsonbin.io/v3/b";
+const storageReady = !!JSONBIN_MASTER_KEY;
+
+async function jsonbinRequest(method, id, body){
+  const url = id ? `${JSONBIN_BASE}/${id}` : JSONBIN_BASE;
+  const headers = { "Content-Type": "application/json", "X-Master-Key": JSONBIN_MASTER_KEY };
+  if(method === "PUT") headers["X-Bin-Versioning"] = "false"; // overwrite in place, don't pile up versions
+  const res = await fetch(url, {
+    method,
+    headers,
+    body: body !== undefined ? JSON.stringify(body) : undefined
+  });
+  if(!res.ok){
+    const errText = await res.text().catch(()=> "");
+    throw new Error(`jsonbin ${method} ${id||''} failed: ${res.status} ${errText}`);
   }
-} catch(e){
-  console.warn('Firebase init failed:', e);
-  firebaseReady = false;
+  if(method === "DELETE") return null;
+  const data = await res.json();
+  return data.record;
+}
+
+async function createIndexBin(){
+  const record = await jsonbinRequest("POST", null, { projects: [] });
+  // POST doesn't return the id inside "record" the same way GET does, so re-fetch metadata via a raw call
+  const res = await fetch(JSONBIN_BASE, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Master-Key": JSONBIN_MASTER_KEY, "X-Bin-Name": "carousel-cutter-index" },
+    body: JSON.stringify({ projects: [] })
+  });
+  const data = await res.json();
+  return data.metadata.id;
 }
 
 // ---------- state ----------
@@ -586,14 +611,10 @@ document.getElementById('parseScriptBtn').addEventListener('click', ()=>{
   setTimeout(()=>goToStep(3), 300);
 });
 
-// ---------- persistence layer ----------
-// Uses Claude's artifact persistent storage (window.storage) when this is running
-// as a claude.ai artifact, since that's the only storage that actually survives
-// between sessions there — localStorage/IndexedDB get wiped on reload in that sandbox.
-// Falls back to IndexedDB automatically if the artifact is downloaded and opened
-// in a regular browser, where window.storage doesn't exist but IndexedDB persists fine.
-const hasClaudeStorage = (typeof window !== 'undefined') && !!window.storage;
-
+// ---------- local persistence for small settings (font) ----------
+// This is per-browser only (not shared) — fine for something like a font file,
+// which each person uploads for themselves. Uses IndexedDB since localStorage
+// isn't reliably available in every hosting context.
 function openKVDB(){
   return new Promise((resolve, reject)=>{
     const req = indexedDB.open('carouselCutterDB_v2', 1);
@@ -625,52 +646,15 @@ async function idbSet(key, value){
     tx.onerror = ()=>reject(tx.error);
   });
 }
-async function idbDelete(key){
-  const db = await openKVDB();
-  return new Promise((resolve, reject)=>{
-    const tx = db.transaction('kv','readwrite');
-    tx.objectStore('kv').delete(key);
-    tx.oncomplete = ()=>resolve(true);
-    tx.onerror = ()=>reject(tx.error);
-  });
-}
-
-async function storageGet(key, shared=false){
-  if(hasClaudeStorage){
-    try{
-      const r = await window.storage.get(key, shared);
-      return r ? r.value : null;
-    } catch(e){ return null; }
-  }
-  // IndexedDB is local to this browser only — there is no real "shared" fallback outside claude.ai
-  try{ return await idbGet(key); } catch(e){ return null; }
-}
-async function storageSet(key, value, shared=false){
-  if(hasClaudeStorage){
-    try{
-      const r = await window.storage.set(key, value, shared);
-      return !!r;
-    } catch(e){ console.warn('storageSet failed', key, e); return false; }
-  }
-  try{ return await idbSet(key, value); } catch(e){ console.warn('storageSet failed', key, e); return false; }
-}
-async function storageDelete(key, shared=false){
-  if(hasClaudeStorage){
-    try{ await window.storage.delete(key, shared); return true; } catch(e){ return false; }
-  }
-  try{ return await idbDelete(key); } catch(e){ return false; }
-}
 
 // ---------- step 3: style ----------
 async function saveFontData(name, base64){
-  try{
-    const ok = await storageSet('custom-font', JSON.stringify({name, base64}));
-    if(!ok) console.warn('Font could not be saved for next time (storage full or unavailable).');
-  } catch(e){ console.warn('Could not save font for next time:', e); }
+  try{ await idbSet('custom-font', JSON.stringify({name, base64})); }
+  catch(e){ console.warn('Could not save font for next time:', e); }
 }
 async function loadSavedFont(){
   try{
-    const raw = await storageGet('custom-font');
+    const raw = await idbGet('custom-font');
     if(raw){
       const saved = JSON.parse(raw);
       await applyFontBuffer(base64ToArrayBuffer(saved.base64), saved.name + ' (saved)');
@@ -1156,87 +1140,126 @@ document.addEventListener('keydown', (e)=>{
   if(e.key === 'Escape' && lightboxOverlay.classList.contains('open')) closeLightbox();
 });
 
-// ---------- shared project storage (Firestore) ----------
-// Collection "projects": one doc per project {title, savedAt, order}
-// Subcollection "projects/{id}/slides": one doc per slide {label, dataURL, order}
-// Split this way so a project with several large images never has to be
-// rewritten as one giant document (Firestore caps a single doc at 1MB).
+// ---------- shared project storage (jsonbin.io) ----------
+// Structure:
+//   - one small "index" bin (JSONBIN_INDEX_BIN_ID) holding { projects: [{binId, title, savedAt, slideCount}] }
+//   - one bin PER PROJECT holding { title, savedAt, slides: [{label, dataURL}] }
+// Split this way so a project full of images never has to be crammed into
+// (and re-sent as part of) one giant shared index document.
 
 async function pushProjectToHistory(title, slideItems){
-  // slideItems: [{dataURL, label}]
-  if(!firebaseReady){
-    alert('Shared Projects isn\'t set up yet — see the setup note in the Projects tab. The download itself still worked.');
+  if(!storageReady){
+    alert("Shared Projects isn't set up yet — see the setup note in the Projects tab. The download itself still worked.");
+    return false;
+  }
+  if(!JSONBIN_INDEX_BIN_ID){
+    alert("Shared Projects needs an index bin first — go to the Projects tab and click \"Create shared project list\", then paste the resulting ID into JSONBIN_INDEX_BIN_ID in the file. The download itself still worked.");
     return false;
   }
   try{
-    const projectRef = await db.collection('projects').add({
-      title: title && title.trim() ? title.trim() : 'Untitled project',
-      savedAt: firebase.firestore.FieldValue.serverTimestamp()
+    const finalTitle = title && title.trim() ? title.trim() : 'Untitled project';
+    const savedAt = new Date().toISOString();
+
+    // 1. create a bin just for this project's slides
+    const projectRecord = await jsonbinRequest("POST", null, { title: finalTitle, savedAt, slides: slideItems });
+    const createRes = await fetch(JSONBIN_BASE, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Master-Key": JSONBIN_MASTER_KEY, "X-Bin-Name": "carousel-cutter-project" },
+      body: JSON.stringify({ title: finalTitle, savedAt, slides: slideItems })
     });
-    const batch = db.batch();
-    slideItems.forEach((item, i)=>{
-      const slideRef = projectRef.collection('slides').doc();
-      batch.set(slideRef, { label: item.label || '', dataURL: item.dataURL, order: i });
-    });
-    await batch.commit();
+    const createData = await createRes.json();
+    const projectBinId = createData.metadata.id;
+
+    // 2. append a lightweight entry to the shared index
+    const index = await jsonbinRequest("GET", JSONBIN_INDEX_BIN_ID + "/latest");
+    const projects = (index && index.projects) || [];
+    projects.unshift({ binId: projectBinId, title: finalTitle, savedAt, slideCount: slideItems.length });
+    await jsonbinRequest("PUT", JSONBIN_INDEX_BIN_ID, { projects });
+
     return true;
   } catch(e){
-    console.warn('Could not save project to Firestore:', e);
+    console.warn('Could not save project to shared storage:', e);
     alert('Could not save this project to shared Projects (' + (e.message || 'unknown error') + '). The download itself still worked.');
     return false;
   }
 }
 
 async function getProjects(){
-  if(!firebaseReady) return [];
-  const snap = await db.collection('projects').orderBy('savedAt', 'desc').get();
-  const projects = await Promise.all(snap.docs.map(async doc=>{
-    const data = doc.data();
-    const slidesSnap = await doc.ref.collection('slides').orderBy('order','asc').get();
-    const slides = slidesSnap.docs.map(s=>({ id: s.id, ...s.data() }));
-    return {
-      projectId: doc.id,
-      title: data.title,
-      savedAt: data.savedAt ? data.savedAt.toDate().toISOString() : new Date().toISOString(),
-      slides
-    };
+  if(!storageReady || !JSONBIN_INDEX_BIN_ID) return [];
+  const index = await jsonbinRequest("GET", JSONBIN_INDEX_BIN_ID + "/latest");
+  const entries = (index && index.projects) || [];
+  const projects = await Promise.all(entries.map(async entry=>{
+    try{
+      const rec = await jsonbinRequest("GET", entry.binId + "/latest");
+      return { projectId: entry.binId, title: rec.title || entry.title, savedAt: rec.savedAt || entry.savedAt, slides: rec.slides || [] };
+    } catch(e){
+      // project bin might have been deleted directly on jsonbin — skip it
+      return { projectId: entry.binId, title: entry.title, savedAt: entry.savedAt, slides: [], missing: true };
+    }
   }));
   return projects;
 }
 
 async function deleteProject(projectId){
-  if(!firebaseReady) return;
-  const projectRef = db.collection('projects').doc(projectId);
-  const slidesSnap = await projectRef.collection('slides').get();
-  const batch = db.batch();
-  slidesSnap.docs.forEach(d=>batch.delete(d.ref));
-  batch.delete(projectRef);
-  await batch.commit();
+  if(!storageReady || !JSONBIN_INDEX_BIN_ID) return;
+  try{ await jsonbinRequest("DELETE", projectId); } catch(e){ /* already gone, ignore */ }
+  const index = await jsonbinRequest("GET", JSONBIN_INDEX_BIN_ID + "/latest");
+  const projects = ((index && index.projects) || []).filter(p=>p.binId !== projectId);
+  await jsonbinRequest("PUT", JSONBIN_INDEX_BIN_ID, { projects });
 }
 
 async function clearHistory(){
-  if(!firebaseReady) return;
-  const snap = await db.collection('projects').get();
-  for(const doc of snap.docs){
-    await deleteProject(doc.id);
+  if(!storageReady || !JSONBIN_INDEX_BIN_ID) return;
+  const index = await jsonbinRequest("GET", JSONBIN_INDEX_BIN_ID + "/latest");
+  const projects = (index && index.projects) || [];
+  for(const p of projects){
+    try{ await jsonbinRequest("DELETE", p.binId); } catch(e){ /* ignore */ }
   }
+  await jsonbinRequest("PUT", JSONBIN_INDEX_BIN_ID, { projects: [] });
+}
+
+function renderStorageSetupNote(){
+  const note = document.getElementById('storageSetupNote');
+  if(!storageReady){
+    note.style.display = 'block';
+    note.innerHTML = `<strong style="color:var(--tally);">Shared Projects isn't connected yet.</strong> Open this HTML file, find <code class="mono">JSONBIN_MASTER_KEY</code> near the top of the &lt;script&gt; tag, and paste in a free API key from <a href="https://jsonbin.io" target="_blank" style="color:var(--teal);">jsonbin.io</a> (sign up, then copy your X-Master-Key from the dashboard). Save the file and re-upload it.`;
+    return true;
+  }
+  if(!JSONBIN_INDEX_BIN_ID){
+    note.style.display = 'block';
+    note.innerHTML = `<strong style="color:var(--tally);">Almost there.</strong> Your API key is set. Now click "Create shared project list" below, copy the ID it gives you into <code class="mono">JSONBIN_INDEX_BIN_ID</code> near the top of the &lt;script&gt; tag, save the file, and re-upload it. <button id="createIndexBinBtn" style="margin-top:8px;">Create shared project list</button>`;
+    setTimeout(()=>{
+      const btn = document.getElementById('createIndexBinBtn');
+      if(btn) btn.addEventListener('click', async ()=>{
+        btn.disabled = true; btn.textContent = 'Creating…';
+        try{
+          const id = await createIndexBin();
+          alert(`Created! Paste this into JSONBIN_INDEX_BIN_ID:\n\n${id}`);
+        } catch(e){
+          alert('Could not create the index bin: ' + (e.message || e));
+        }
+        btn.disabled = false; btn.textContent = 'Create shared project list';
+      });
+    }, 0);
+    return true;
+  }
+  note.style.display = 'none';
+  return false;
 }
 
 async function renderHistoryGallery(){
   const gallery = document.getElementById('historyGallery');
-  const setupNote = document.getElementById('firebaseSetupNote');
-  if(!firebaseReady){
-    setupNote.style.display = 'block';
+  const blocked = renderStorageSetupNote();
+  if(blocked){
     gallery.innerHTML = '';
     return;
   }
-  setupNote.style.display = 'none';
 
   let projects;
   try{
     projects = await getProjects();
   } catch(e){
-    gallery.innerHTML = `<p style="color:var(--tally);font-size:13px;">Couldn't load projects (${e.message || e}). Check your Firestore security rules.</p>`;
+    gallery.innerHTML = `<p style="color:var(--tally);font-size:13px;">Couldn't load projects (${e.message || e}).</p>`;
     return;
   }
 
