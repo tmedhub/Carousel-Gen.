@@ -219,11 +219,11 @@
 
 <header>
   <h1>CAROUSEL CUTTER</h1>
-  <span class="tag">REC</span>
-  <p>Video + script in → speaker-split slide carousel out. Runs entirely in this browser tab — nothing uploads anywhere.</p>
+  <button id="saveProjectBtn" style="margin-left:auto;">💾 Save project</button>
 </header>
 
 <div class="steps">
+  <div class="step-tab" data-step="0"><span class="n">00</span> Projects</div>
   <div class="step-tab active" data-step="1"><span class="n">01</span> Video</div>
   <div class="step-tab" data-step="2"><span class="n">02</span> Script</div>
   <div class="step-tab" data-step="3"><span class="n">03</span> Style</div>
@@ -232,6 +232,17 @@
 </div>
 
 <main>
+
+  <!-- STEP 0: PROJECTS -->
+  <section class="panel step-panel" id="panel-0" style="display:none;">
+    <h2>Load a saved project</h2>
+    <p class="sub">This tool has no server or account — "projects" are files on your own computer. Hit "Save project" (top-right) anytime to download your current work-in-progress (script, captured frames, zoom/pan settings, composed slides). Load one back here to pick up exactly where you left off.</p>
+    <div class="dropzone" id="projectDrop">
+      <input type="file" id="projectInput" accept="application/json">
+      <div id="projectDropLabel">Click to choose a saved project .json file</div>
+      <div class="hint">Note: the original video isn't stored in the project file — you'd only need to re-upload it if you want to capture new frames.</div>
+    </div>
+  </section>
 
   <!-- STEP 1: VIDEO -->
   <section class="panel step-panel" id="panel-1">
@@ -352,7 +363,61 @@ function goToStep(n){
   document.querySelector(`.step-tab[data-step="${n}"]`).click();
 }
 
-// ---------- step 1: video ----------
+// ---------- projects: save / load ----------
+document.getElementById('saveProjectBtn').addEventListener('click', ()=>{
+  const project = {
+    version: 1,
+    savedAt: new Date().toISOString(),
+    scriptRaw: document.getElementById('scriptInput').value,
+    style: {
+      fontSize: document.getElementById('fontSize').value,
+      textColor: document.getElementById('textColor').value,
+      glowColor: document.getElementById('glowColor').value,
+      glowIntensity: document.getElementById('glowIntensity').value
+    },
+    slides: slides
+  };
+  const blob = new Blob([JSON.stringify(project)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const stamp = project.savedAt.replace(/[:.]/g,'-');
+  a.download = `carousel_project_${stamp}.json`;
+  a.click();
+});
+
+const projectDrop = document.getElementById('projectDrop');
+const projectInput = document.getElementById('projectInput');
+projectDrop.addEventListener('click', ()=>projectInput.click());
+projectDrop.addEventListener('dragover', e=>e.preventDefault());
+projectDrop.addEventListener('drop', e=>{
+  e.preventDefault();
+  if(e.dataTransfer.files.length) loadProjectFile(e.dataTransfer.files[0]);
+});
+projectInput.addEventListener('change', e=>{
+  if(e.target.files.length) loadProjectFile(e.target.files[0]);
+});
+function loadProjectFile(file){
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    let project;
+    try { project = JSON.parse(reader.result); }
+    catch(err){ alert('Could not read this project file.'); return; }
+
+    document.getElementById('scriptInput').value = project.scriptRaw || '';
+    if(project.style){
+      document.getElementById('fontSize').value = project.style.fontSize ?? 44;
+      document.getElementById('textColor').value = project.style.textColor ?? '#FFFFFF';
+      document.getElementById('glowColor').value = project.style.glowColor ?? '#FFFFFF';
+      document.getElementById('glowIntensity').value = project.style.glowIntensity ?? 1.0;
+    }
+    slides = project.slides || [];
+
+    document.getElementById('projectDropLabel').textContent = `Loaded: ${file.name}`;
+    goToStep(4);
+    renderSlideCards();
+  };
+  reader.readAsText(file);
+}
 const videoDrop = document.getElementById('videoDrop');
 const videoInput = document.getElementById('videoInput');
 videoDrop.addEventListener('click', ()=>videoInput.click());
