@@ -1108,12 +1108,14 @@ document.addEventListener('keydown', (e)=>{
 // Each project is stored under key "project:<id>" so we can list them all
 // by prefix without loading everything into one giant record.
 
-async function pushProjectToHistory(title, slideItems){
+async function pushProjectToHistory(title, slidesSnapshot){
   try{
     const finalTitle = title && title.trim() ? title.trim() : 'Untitled project';
     const savedAt = new Date().toISOString();
     const id = 'project:' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
-    await idbSet(id, { title: finalTitle, savedAt, slides: slideItems });
+    // deep-clone via JSON round-trip so later in-session edits to `slides` can't mutate what's stored
+    const slides = JSON.parse(JSON.stringify(slidesSnapshot));
+    await idbSet(id, { title: finalTitle, savedAt, slides });
     return true;
   } catch(e){
     console.warn('Could not save project locally:', e);
@@ -1165,15 +1167,17 @@ async function renderHistoryGallery(){
       </div>
       <div class="gallery"></div>
       <div class="footer-actions">
+        <button class="editProjectBtn primary" data-id="${proj.projectId}">Edit project</button>
         <button class="deleteProjectBtn" data-id="${proj.projectId}">Delete project</button>
       </div>
     `;
     const galleryEl = card.querySelector('.gallery');
-    proj.slides.forEach((item, i)=>{
+    proj.slides.forEach((slide, i)=>{
+      const label = `${i+1} — ${slide.top.speaker}${slide.bottom ? ' + '+slide.bottom.speaker : ''}`;
       const fig = document.createElement('figure');
-      fig.innerHTML = `<img src="${item.dataURL}" alt="${escapeHTML(item.label||'')}"><figcaption>${item.label ? escapeHTML(item.label) : (i+1)}</figcaption>`;
+      fig.innerHTML = `<img src="${slide.composedDataURL}" alt="${escapeHTML(label)}"><figcaption>${escapeHTML(label)}</figcaption>`;
       fig.querySelector('img').addEventListener('click', ()=>{
-        openLightbox(item.dataURL, `${proj.title} — ${item.label ? item.label : (i+1)}`);
+        openLightbox(slide.composedDataURL, `${proj.title} — ${label}`);
       });
       const dlBtn = document.createElement('button');
       dlBtn.textContent = 'Download PNG';
@@ -1181,7 +1185,7 @@ async function renderHistoryGallery(){
       dlBtn.style.marginTop = '6px';
       dlBtn.addEventListener('click', ()=>{
         const a = document.createElement('a');
-        a.href = item.dataURL;
+        a.href = slide.composedDataURL;
         a.download = `${proj.title.replace(/[^a-z0-9]+/gi,'_')}_${String(i+1).padStart(2,'0')}.png`;
         a.click();
       });
@@ -1189,6 +1193,18 @@ async function renderHistoryGallery(){
       galleryEl.appendChild(fig);
     });
     gallery.appendChild(card);
+  });
+
+  gallery.querySelectorAll('.editProjectBtn').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const proj = projects.find(p=>p.projectId === btn.dataset.id);
+      if(!proj) return;
+      // load this project's slides back into the working session and jump to Capture & compose
+      slides = JSON.parse(JSON.stringify(proj.slides));
+      document.getElementById('projectTitleInput').value = proj.title;
+      goToStep(4); // the step-4 tab listener re-renders slide cards since `slides` is now populated
+      slides.forEach((s, idx)=>{ if(s.composedDataURL) composeSlide(idx); });
+    });
   });
 
   gallery.querySelectorAll('.deleteProjectBtn').forEach(btn=>{
@@ -1241,17 +1257,14 @@ function renderExportGallery(){
 
 document.getElementById('downloadZipBtn').addEventListener('click', async ()=>{
   const zip = new JSZip();
-  const slideItems = [];
+  let hasComposed = false;
   slides.forEach((slide, idx)=>{
     if(!slide.composedDataURL) return;
+    hasComposed = true;
     const base64 = slide.composedDataURL.split(',')[1];
     zip.file(`slide_${String(idx+1).padStart(2,'0')}.png`, base64, {base64:true});
-    slideItems.push({
-      dataURL: slide.composedDataURL,
-      label: `${idx+1} — ${slide.top.speaker}${slide.bottom ? ' + '+slide.bottom.speaker : ''}`
-    });
   });
-  if(slideItems.length===0){ alert('No composed slides to export yet.'); return; }
+  if(!hasComposed){ alert('No composed slides to export yet.'); return; }
 
   const titleInput = document.getElementById('projectTitleInput');
   const title = titleInput.value;
@@ -1262,7 +1275,7 @@ document.getElementById('downloadZipBtn').addEventListener('click', async ()=>{
   a.download = `${(title && title.trim() ? title.trim() : 'carousel_slides').replace(/[^a-z0-9]+/gi,'_')}.zip`;
   a.click();
 
-  await pushProjectToHistory(title, slideItems);
+  await pushProjectToHistory(title, slides);
 });
 
 document.getElementById('toCaptureBtn').addEventListener('click', ()=>{
