@@ -1,10 +1,8 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Carousel Gen.</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -13,7 +11,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
 <style>
-
 :root{
   --bg:#15151a;
   --panel:#1d1d24;
@@ -26,9 +23,7 @@
   --teal:#2dd4bf;
 }
 
-*{
-  box-sizing:border-box;
-}
+*{box-sizing:border-box;}
 
 body{
   margin:0;
@@ -41,11 +36,6 @@ body{
 .mono{
   font-family:'JetBrains Mono',monospace;
 }
-
-
-/* ============================================================
-   HEADER
-============================================================ */
 
 header{
   padding:28px 32px 20px;
@@ -64,16 +54,21 @@ header h1{
   color:var(--paper);
 }
 
+header .tag{
+  color:var(--tally);
+  font-size:11px;
+  letter-spacing:1.5px;
+  text-transform:uppercase;
+  border:1px solid var(--tally);
+  border-radius:3px;
+  padding:3px 8px;
+}
+
 header p{
   margin:0;
   color:var(--muted);
   font-size:13px;
 }
-
-
-/* ============================================================
-   STEPS
-============================================================ */
 
 .steps{
   display:flex;
@@ -110,14 +105,9 @@ header p{
   color:var(--tally);
 }
 
-
-/* ============================================================
-   MAIN
-============================================================ */
-
 main{
   padding:28px 32px 80px;
-  max-width:1400px;
+  max-width:1200px;
   margin:0 auto;
 }
 
@@ -142,11 +132,6 @@ main{
   font-size:13px;
   margin:0 0 16px;
 }
-
-
-/* ============================================================
-   INPUTS
-============================================================ */
 
 .dropzone{
   border:1.5px dashed var(--line);
@@ -214,11 +199,6 @@ input[type=number]{
   margin-bottom:6px;
 }
 
-
-/* ============================================================
-   BUTTONS
-============================================================ */
-
 button{
   background:var(--panel-2);
   border:1px solid var(--line);
@@ -250,10 +230,24 @@ button:disabled{
   cursor:not-allowed;
 }
 
+.parsed-list{
+  font-size:12px;
+  color:var(--muted);
+  max-height:120px;
+  overflow-y:auto;
+  margin-top:10px;
+}
 
-/* ============================================================
-   VIDEO
-============================================================ */
+.parsed-list div{
+  padding:2px 0;
+  border-bottom:1px solid var(--line);
+}
+
+.parsed-list b{
+  color:var(--paper);
+}
+
+/* FILMSTRIP */
 
 .filmstrip{
   position:relative;
@@ -262,7 +256,6 @@ button:disabled{
     #0c0c0f 0 8px,
     #17171c 8px 16px
   );
-
   border-top:6px solid #000;
   border-bottom:6px solid #000;
   padding:4px 0;
@@ -275,7 +268,6 @@ button:disabled{
   left:0;
   right:0;
   height:6px;
-
   background:repeating-linear-gradient(
     90deg,
     #000 0 5px,
@@ -317,57 +309,23 @@ input[type=range]{
   min-width:70px;
 }
 
-
-/* ============================================================
-   SLIDE CARD
-============================================================ */
+/* SLIDE CARDS */
 
 .slide-card{
   display:grid;
-
-  /*
-    Two capture areas + preview.
-  */
-  grid-template-columns:
-    minmax(0,1fr)
-    minmax(0,1fr)
-    320px;
-
+  grid-template-columns:1fr 1fr 320px;
   gap:16px;
-
   border:1px solid var(--line);
   border-radius:8px;
-
   padding:16px;
-
   margin-bottom:14px;
-
   background:var(--panel-2);
 }
-
-
-/*
-  On a 3-dialogue slide, give every dialogue its own
-  capture column, followed by the preview.
-*/
-.slide-card.three-dialogue{
-  grid-template-columns:
-    minmax(0,1fr)
-    minmax(0,1fr)
-    minmax(0,1fr)
-    320px;
-}
-
-
-/* ============================================================
-   CAPTURE AREA
-============================================================ */
 
 .half-capture{
   border:1px solid var(--line);
   border-radius:8px;
   padding:12px;
-  min-width:0;
 }
 
 .half-capture h4{
@@ -408,7 +366,7 @@ input[type=range]{
 }
 
 canvas.thumb{
-  cursor:grab;
+  cursor:crosshair;
 }
 
 .zoom-row{
@@ -424,16 +382,15 @@ canvas.thumb{
   white-space:nowrap;
 }
 
-.hint{
+.zoom-row input[type=range]{
+  flex:1;
+}
+
+div.hint{
   font-size:11px;
   color:var(--muted);
   margin-bottom:8px;
 }
-
-
-/* ============================================================
-   COPY
-============================================================ */
 
 .copy-row{
   display:flex;
@@ -443,14 +400,10 @@ canvas.thumb{
 
 .copy-row select{
   flex:1;
-  min-width:0;
-
   background:var(--panel-2);
   border:1px solid var(--line);
   color:var(--text);
-
   border-radius:6px;
-
   font-size:11px;
   padding:6px;
 }
@@ -460,28 +413,21 @@ canvas.thumb{
   padding:6px 10px;
 }
 
-
-/* ============================================================
-   SLIDE PREVIEW
-============================================================ */
+/* COMPOSED SLIDE */
 
 .slide-preview{
   display:flex;
   flex-direction:column;
   align-items:center;
   gap:8px;
-  min-width:0;
 }
 
 .slide-preview-wrap{
   position:relative;
   width:100%;
   line-height:0;
-
-  /*
-    The canvas never moves.
-  */
   user-select:none;
+  touch-action:none;
 }
 
 .slide-preview canvas{
@@ -489,23 +435,14 @@ canvas.thumb{
   border-radius:6px;
   border:1px solid var(--line);
   display:block;
-
-  position:relative;
-  z-index:1;
 }
 
-
-/* ============================================================
-   TEXT BOX
-============================================================ */
-
 /*
-  THIS IS THE IMPORTANT PART.
+  IMPORTANT:
+  Caption boxes are now completely independent from the image.
 
-  The text is an HTML box sitting OVER the canvas.
-
-  While dragging, only this box moves.
-  The canvas underneath does NOT get re-composed.
+  left/top are controlled by JavaScript.
+  There are NO top/bottom constraints anymore.
 */
 
 .caption-editable{
@@ -515,96 +452,64 @@ canvas.thumb{
   top:50%;
 
   width:88%;
-  min-height:45px;
 
-  display:flex;
-  align-items:center;
-  justify-content:center;
+  transform:translate(-50%,-50%);
 
-  text-align:center;
+  display:block;
 
   color:transparent;
-
   caret-color:var(--teal);
 
   font-family:'Inter',sans-serif;
   font-style:italic;
   font-weight:700;
-
   line-height:1.25;
 
-  padding:8px 12px;
+  padding:8px 10px;
 
-  border:2px solid transparent;
-  border-radius:6px;
+  border-radius:5px;
+  border:1px dashed transparent;
+
+  cursor:grab;
 
   outline:none;
 
   white-space:pre-wrap;
-  overflow:hidden;
+  overflow:visible;
 
-  z-index:10;
-
-  cursor:grab;
+  text-align:center;
 
   touch-action:none;
 
-  transform:translate(-50%,-50%);
-
   user-select:text;
+
+  transition:
+    border-color .08s ease,
+    background .08s ease;
 }
 
-
-/*
-  Selected box.
-*/
-
-.caption-editable.selected{
-  border-color:var(--teal);
-
-  /*
-    Slight dark background so you can clearly
-    see the actual text box while moving it.
-  */
-  background:rgba(0,0,0,.28);
-
-  color:rgba(255,255,255,.95);
-
-  cursor:grab;
+.caption-editable:hover{
+  border-color:rgba(45,212,191,.35);
+  background:rgba(0,0,0,.10);
 }
-
-
-/*
-  While dragging.
-*/
-
-.caption-editable.dragging{
-  cursor:grabbing;
-
-  user-select:none;
-
-  background:rgba(0,0,0,.42);
-
-  border-color:var(--teal);
-
-  color:rgba(255,255,255,.95);
-}
-
-
-/*
-  When editing text.
-*/
 
 .caption-editable:focus{
   border-color:var(--teal);
-
-  background:rgba(0,0,0,.45);
-
-  color:rgba(255,255,255,.95);
-
+  background:rgba(0,0,0,.25);
+  color:rgba(255,255,255,.9);
   cursor:text;
 }
 
+.caption-editable.dragging{
+  cursor:grabbing;
+  border-color:var(--teal);
+  background:rgba(0,0,0,.18);
+  color:rgba(255,255,255,.9);
+}
+
+.caption-editable.dragging *{
+  pointer-events:none;
+}
 
 .edit-hint{
   font-size:11px;
@@ -612,16 +517,11 @@ canvas.thumb{
   text-align:center;
 }
 
-
-/* ============================================================
-   GALLERY
-============================================================ */
+/* GALLERY */
 
 .gallery{
   display:grid;
-  grid-template-columns:
-    repeat(auto-fill,minmax(160px,1fr));
-
+  grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
   gap:14px;
   margin-top:12px;
 }
@@ -650,11 +550,6 @@ canvas.thumb{
   text-align:center;
 }
 
-
-/* ============================================================
-   FOOTER
-============================================================ */
-
 .footer-actions{
   display:flex;
   justify-content:flex-end;
@@ -669,11 +564,6 @@ canvas.thumb{
   border-radius:3px;
   padding:2px 6px;
 }
-
-
-/* ============================================================
-   PROJECTS
-============================================================ */
 
 .project-title-row{
   display:flex;
@@ -722,26 +612,17 @@ canvas.thumb{
   color:var(--teal);
 }
 
-
-/* ============================================================
-   LIGHTBOX
-============================================================ */
+/* LIGHTBOX */
 
 .lightbox-overlay{
   display:none;
-
   position:fixed;
   inset:0;
-
   background:rgba(0,0,0,.88);
-
   z-index:1000;
-
   align-items:center;
   justify-content:center;
-
   padding:40px;
-
   cursor:zoom-out;
 }
 
@@ -752,169 +633,94 @@ canvas.thumb{
 .lightbox-overlay img{
   max-width:100%;
   max-height:100%;
-
   border-radius:8px;
-
-  box-shadow:
-    0 20px 60px rgba(0,0,0,.6);
+  box-shadow:0 20px 60px rgba(0,0,0,.6);
 }
 
 .lightbox-close{
   position:absolute;
   top:20px;
   right:28px;
-
   font-size:28px;
-
   color:var(--text);
-
   background:none;
   border:none;
-
   cursor:pointer;
-
   line-height:1;
 }
 
 .lightbox-caption{
   position:absolute;
-
   bottom:24px;
   left:0;
   right:0;
-
   text-align:center;
-
   color:var(--muted);
   font-size:13px;
 }
 
+/* MOBILE */
 
-/* ============================================================
-   RESPONSIVE
-============================================================ */
-
-@media(max-width:1100px){
-
-  .slide-card,
-  .slide-card.three-dialogue{
-    grid-template-columns:1fr 1fr;
-  }
-
-  .slide-preview{
-    grid-column:1 / -1;
-  }
-}
-
-@media(max-width:700px){
-
-  main{
-    padding-left:14px;
-    padding-right:14px;
-  }
-
-  header{
-    padding-left:14px;
-    padding-right:14px;
-  }
-
-  .steps{
-    padding-left:14px;
-    padding-right:14px;
-  }
-
-  .slide-card,
-  .slide-card.three-dialogue{
+@media(max-width:900px){
+  .slide-card{
     grid-template-columns:1fr;
   }
 
   .slide-preview{
-    grid-column:auto;
+    max-width:500px;
+    margin:0 auto;
   }
 }
-
 </style>
 </head>
 
-
 <body>
 
-
 <header>
-
   <h1>CAROUSEL GENERATOR</h1>
-
 </header>
 
-
-<!-- ==========================================================
-     STEP NAVIGATION
-=========================================================== -->
-
 <div class="steps">
-
   <div class="step-tab active" data-step="1">
-    <span class="n">01</span>
-    Video
+    <span class="n">01</span> Video
   </div>
 
   <div class="step-tab" data-step="2">
-    <span class="n">02</span>
-    Script
+    <span class="n">02</span> Script
   </div>
 
   <div class="step-tab" data-step="3">
-    <span class="n">03</span>
-    Style
+    <span class="n">03</span> Style
   </div>
 
   <div class="step-tab" data-step="4">
-    <span class="n">04</span>
-    Capture & compose
+    <span class="n">04</span> Capture &amp; compose
   </div>
 
   <div class="step-tab" data-step="5">
-    <span class="n">05</span>
-    Export
+    <span class="n">05</span> Export
   </div>
 
   <div class="step-tab" data-step="6">
-    <span class="n">06</span>
-    Projects
+    <span class="n">06</span> Projects
   </div>
-
 </div>
-
 
 <main>
 
+<!-- STEP 1 -->
 
-<!-- ==========================================================
-     STEP 1
-=========================================================== -->
-
-<section
-  class="panel step-panel"
-  id="panel-1"
->
+<section class="panel step-panel" id="panel-1">
 
   <h2>Upload video</h2>
 
   <p class="sub">
-    The source footage you'll be scrubbing through to grab
-    frames for each line.
+    The source footage you'll be scrubbing through to grab frames for each line.
   </p>
 
-  <div
-    class="dropzone"
-    id="videoDrop"
-  >
+  <div class="dropzone" id="videoDrop">
 
-    <input
-      type="file"
-      id="videoInput"
-      accept="video/*"
-    >
+    <input type="file" id="videoInput" accept="video/*">
 
     <div id="videoDropLabel">
       Click to choose a video file, or drag one here
@@ -929,21 +735,15 @@ canvas.thumb{
 </section>
 
 
-<!-- ==========================================================
-     STEP 2
-=========================================================== -->
+<!-- STEP 2 -->
 
-<section
-  class="panel step-panel"
-  id="panel-2"
-  style="display:none;"
->
+<section class="panel step-panel" id="panel-2" style="display:none;">
 
   <h2>Paste script</h2>
 
   <p class="sub">
-    Each slide can contain 1, 2, or 3 dialogue lines.
-    Three dialogues become three horizontal sections.
+    Grouped into "Slide N" blocks. Each slide can have 1, 2, or 3 dialogues.
+    Dialogues are arranged as horizontal sections.
   </p>
 
   <textarea
@@ -955,14 +755,10 @@ Sak: I think it's when you stop trying to change the outcome.
 Slide 2
 Adil: What do you mean?
 Sak: You stop waiting for the perfect text.
-Adil: You stop trying to control how they respond."
+Adil: You stop falling in love with their potential."
   ></textarea>
 
-
-  <div
-    class="row"
-    style="margin-top:12px;"
-  >
+  <div class="row" style="margin-top:12px;">
 
     <button id="parseScriptBtn">
       Parse script
@@ -976,7 +772,6 @@ Adil: You stop trying to control how they respond."
 
   </div>
 
-
   <div
     class="parsed-list"
     id="parsedList"
@@ -985,15 +780,9 @@ Adil: You stop trying to control how they respond."
 </section>
 
 
-<!-- ==========================================================
-     STEP 3
-=========================================================== -->
+<!-- STEP 3 -->
 
-<section
-  class="panel step-panel"
-  id="panel-3"
-  style="display:none;"
->
+<section class="panel step-panel" id="panel-3" style="display:none;">
 
   <h2>Caption style</h2>
 
@@ -1001,9 +790,7 @@ Adil: You stop trying to control how they respond."
     Locked to your brand spec by default — adjust if needed.
   </p>
 
-
   <div class="row">
-
 
     <div>
 
@@ -1093,15 +880,13 @@ Adil: You stop trying to control how they respond."
 
   </div>
 
-
   <p
     class="hint"
     style="color:var(--muted);font-size:12px;"
   >
     Default: bold italic, white text, small drop shadow.
-    Set Drop to 0 for flat text with no shadow at all.
+    Text can be moved independently after composing.
   </p>
-
 
   <div class="footer-actions">
 
@@ -1109,7 +894,7 @@ Adil: You stop trying to control how they respond."
       class="primary"
       id="toCaptureBtn"
     >
-      Continue to capture & compose →
+      Continue to capture &amp; compose →
     </button>
 
   </div>
@@ -1117,9 +902,7 @@ Adil: You stop trying to control how they respond."
 </section>
 
 
-<!-- ==========================================================
-     STEP 4
-=========================================================== -->
+<!-- STEP 4 -->
 
 <section
   class="panel step-panel"
@@ -1127,15 +910,13 @@ Adil: You stop trying to control how they respond."
   style="display:none;"
 >
 
-  <h2>Capture & compose</h2>
+  <h2>Capture &amp; compose</h2>
 
   <p class="sub">
-    Scrub to the right moment for each dialogue, capture,
-    then compose the slide.
+    Scrub to the right moment for each dialogue, capture, then compose the slide.
+    Slides can contain 1, 2, or 3 horizontal sections.
   </p>
 
-
-  <!-- VIDEO -->
 
   <div class="filmstrip">
 
@@ -1143,7 +924,6 @@ Adil: You stop trying to control how they respond."
       id="videoPreview"
       class="preview"
     ></video>
-
 
     <div class="scrub-row">
 
@@ -1154,7 +934,6 @@ Adil: You stop trying to control how they respond."
         00:00.0
       </span>
 
-
       <input
         type="range"
         id="scrubber"
@@ -1164,15 +943,9 @@ Adil: You stop trying to control how they respond."
         value="0"
       >
 
+      <button id="stepBack">-1f</button>
 
-      <button id="stepBack">
-        -1f
-      </button>
-
-
-      <button id="stepFwd">
-        +1f
-      </button>
+      <button id="stepFwd">+1f</button>
 
     </div>
 
@@ -1187,9 +960,7 @@ Adil: You stop trying to control how they respond."
 </section>
 
 
-<!-- ==========================================================
-     STEP 5
-=========================================================== -->
+<!-- STEP 5 -->
 
 <section
   class="panel step-panel"
@@ -1202,7 +973,6 @@ Adil: You stop trying to control how they respond."
   <p class="sub">
     Every composed slide from this session, in order.
   </p>
-
 
   <div class="project-title-row">
 
@@ -1234,15 +1004,6 @@ Adil: You stop trying to control how they respond."
   </div>
 
 
-  <p
-    class="sub"
-    style="margin:8px 0 0;"
-  >
-    Download each slide individually below or download
-    the complete ZIP.
-  </p>
-
-
   <div
     class="gallery"
     id="exportGallery"
@@ -1251,9 +1012,7 @@ Adil: You stop trying to control how they respond."
 </section>
 
 
-<!-- ==========================================================
-     STEP 6
-=========================================================== -->
+<!-- STEP 6 -->
 
 <section
   class="panel step-panel"
@@ -1264,10 +1023,9 @@ Adil: You stop trying to control how they respond."
   <h2>Projects</h2>
 
   <p class="sub">
-    Every batch you've exported as a ZIP, grouped together
-    with its title. Saved locally in this browser.
+    Every batch you've exported as a ZIP.
+    Saved locally in this browser.
   </p>
-
 
   <div class="footer-actions">
 
@@ -1277,14 +1035,12 @@ Adil: You stop trying to control how they respond."
 
   </div>
 
-
   <div
     class="gallery"
     id="historyGallery"
   ></div>
 
 </section>
-
 
 </main>
 
@@ -1296,10 +1052,6 @@ Adil: You stop trying to control how they respond."
   style="display:none;"
 ></canvas>
 
-
-<!-- ==========================================================
-     LIGHTBOX
-=========================================================== -->
 
 <div
   class="lightbox-overlay"
@@ -1329,10 +1081,9 @@ Adil: You stop trying to control how they respond."
 
 <script>
 
-
-// ============================================================
-// STATE
-// ============================================================
+/* =========================================================
+   STATE
+========================================================= */
 
 let videoFile = null;
 
@@ -1345,89 +1096,57 @@ let customFontLoaded = false;
 const imgCache = {};
 
 
-// ============================================================
-// STEP NAVIGATION
-// ============================================================
+/* =========================================================
+   STEP NAV
+========================================================= */
 
-document
-  .querySelectorAll('.step-tab')
-  .forEach(tab=>{
+document.querySelectorAll('.step-tab').forEach(tab => {
 
-    tab.addEventListener('click',()=>{
+  tab.addEventListener('click', () => {
 
-      document
-        .querySelectorAll('.step-tab')
-        .forEach(t=>{
-          t.classList.remove('active');
-        });
+    document
+      .querySelectorAll('.step-tab')
+      .forEach(t => t.classList.remove('active'));
 
+    document
+      .querySelectorAll('.step-panel')
+      .forEach(p => p.style.display = 'none');
 
-      document
-        .querySelectorAll('.step-panel')
-        .forEach(p=>{
-          p.style.display='none';
-        });
+    tab.classList.add('active');
 
+    document
+      .getElementById('panel-' + tab.dataset.step)
+      .style.display = 'block';
 
-      tab.classList.add('active');
-
-
-      const panel =
-        document.getElementById(
-          'panel-'+tab.dataset.step
-        );
-
-
-      if(panel){
-        panel.style.display='block';
-      }
-
-
-      if(
-        tab.dataset.step==='4' &&
-        slides.length
-      ){
-
+    if(tab.dataset.step === '4'){
+      if(slides.length){
         renderSlideCards();
-
       }
+    }
 
+    if(tab.dataset.step === '5'){
+      renderExportGallery();
+    }
 
-      if(tab.dataset.step==='5'){
-
-        renderExportGallery();
-
-      }
-
-
-      if(tab.dataset.step==='6'){
-
-        renderHistoryGallery();
-
-      }
-
-    });
+    if(tab.dataset.step === '6'){
+      renderHistoryGallery();
+    }
 
   });
 
+});
+
 
 function goToStep(n){
-
-  const tab =
-    document.querySelector(
-      `.step-tab[data-step="${n}"]`
-    );
-
-  if(tab){
-    tab.click();
-  }
-
+  document
+    .querySelector(`.step-tab[data-step="${n}"]`)
+    .click();
 }
 
 
-// ============================================================
-// VIDEO UPLOAD
-// ============================================================
+/* =========================================================
+   VIDEO
+========================================================= */
 
 const videoDrop =
   document.getElementById('videoDrop');
@@ -1436,117 +1155,81 @@ const videoInput =
   document.getElementById('videoInput');
 
 
-videoDrop.addEventListener(
-  'click',
-  ()=>{
-    videoInput.click();
+videoDrop.addEventListener('click', () => {
+  videoInput.click();
+});
+
+
+videoDrop.addEventListener('dragover', e => {
+  e.preventDefault();
+});
+
+
+videoDrop.addEventListener('drop', e => {
+
+  e.preventDefault();
+
+  if(e.dataTransfer.files.length){
+    handleVideoFile(e.dataTransfer.files[0]);
   }
-);
+
+});
 
 
-videoDrop.addEventListener(
-  'dragover',
-  e=>{
-    e.preventDefault();
+videoInput.addEventListener('change', e => {
+
+  if(e.target.files.length){
+    handleVideoFile(e.target.files[0]);
   }
-);
 
-
-videoDrop.addEventListener(
-  'drop',
-  e=>{
-
-    e.preventDefault();
-
-    if(e.dataTransfer.files.length){
-
-      handleVideoFile(
-        e.dataTransfer.files[0]
-      );
-
-    }
-
-  }
-);
-
-
-videoInput.addEventListener(
-  'change',
-  e=>{
-
-    if(e.target.files.length){
-
-      handleVideoFile(
-        e.target.files[0]
-      );
-
-    }
-
-  }
-);
+});
 
 
 function handleVideoFile(file){
 
-  videoFile=file;
+  videoFile = file;
 
+  document
+    .getElementById('videoDropLabel')
+    .textContent = `Loaded: ${file.name}`;
 
-  document.getElementById(
-    'videoDropLabel'
-  ).textContent =
-    `Loaded: ${file.name}`;
-
-
-  const url =
-    URL.createObjectURL(file);
-
+  const url = URL.createObjectURL(file);
 
   const vp =
-    document.getElementById(
-      'videoPreview'
-    );
+    document.getElementById('videoPreview');
 
-
-  vp.src=url;
-
+  vp.src = url;
 
   vp.addEventListener(
     'loadedmetadata',
-    ()=>{
+    () => {
 
-      document.getElementById(
-        'scrubber'
-      ).max=vp.duration;
+      document
+        .getElementById('scrubber')
+        .max = vp.duration;
 
     },
     {once:true}
   );
 
-
-  setTimeout(
-    ()=>goToStep(2),
-    400
-  );
-
+  setTimeout(() => goToStep(2), 400);
 }
 
 
-// ============================================================
-// SCRIPT PARSING
-// ============================================================
+/* =========================================================
+   SCRIPT PARSER
+========================================================= */
 
 function parseSlideBlocks(raw){
 
   const lines =
     raw
       .split('\n')
-      .map(l=>l.trim());
+      .map(l => l.trim());
 
+  const slideBlocks = [];
 
-  const slideBlocks=[];
-
-  let current=null;
-
+  let current = null;
 
   const lineRe =
     /^([A-Za-z0-9_' ]{1,24}):\s*(.+)$/;
@@ -1556,10 +1239,9 @@ function parseSlideBlocks(raw){
 
     if(!l) continue;
 
-
     if(/^slide\s+\d+/i.test(l)){
 
-      current={
+      current = {
         lines:[]
       };
 
@@ -1569,28 +1251,22 @@ function parseSlideBlocks(raw){
     }
 
 
-    const m=l.match(lineRe);
-
+    const m = l.match(lineRe);
 
     if(m){
 
       if(!current){
 
-        current={
+        current = {
           lines:[]
         };
 
         slideBlocks.push(current);
-
       }
 
-
       current.lines.push({
-
         speaker:m[1].trim(),
-
         text:m[2].trim()
-
       });
 
     }
@@ -1599,381 +1275,340 @@ function parseSlideBlocks(raw){
 
 
   return slideBlocks.filter(
-    b=>b.lines.length>0
+    b => b.lines.length > 0
   );
-
 }
 
 
 document
   .getElementById('parseScriptBtn')
-  .addEventListener(
-    'click',
-    ()=>{
+  .addEventListener('click', () => {
 
-      const raw =
-        document
-          .getElementById('scriptInput')
-          .value
-          .trim();
+    const raw =
+      document
+        .getElementById('scriptInput')
+        .value
+        .trim();
 
+    const slideBlocks =
+      parseSlideBlocks(raw);
 
-      const slideBlocks =
-        parseSlideBlocks(raw);
+    const statusEl =
+      document.getElementById('parseStatus');
 
-
-      const statusEl =
-        document.getElementById(
-          'parseStatus'
-        );
+    const listEl =
+      document.getElementById('parsedList');
 
 
-      const listEl =
-        document.getElementById(
-          'parsedList'
-        );
+    if(slideBlocks.length === 0){
 
-
-      if(slideBlocks.length===0){
-
-        statusEl.style.display=
-          'inline-block';
-
-        statusEl.textContent=
-          'No slides parsed — check format';
-
-        statusEl.style.color=
-          'var(--tally)';
-
-        statusEl.style.borderColor=
-          'var(--tally)';
-
-        listEl.innerHTML='';
-
-        return;
-
-      }
-
-
-      scriptLines =
-        slideBlocks.flatMap(
-          b=>b.lines
-        );
-
-
-      statusEl.style.display=
-        'inline-block';
-
+      statusEl.style.display = 'inline-block';
 
       statusEl.textContent =
-        `${slideBlocks.length} slides / ${scriptLines.length} lines parsed`;
+        'No slides parsed — check format';
+
+      statusEl.style.color =
+        'var(--tally)';
+
+      statusEl.style.borderColor =
+        'var(--tally)';
+
+      listEl.innerHTML = '';
+
+      return;
+    }
 
 
-      statusEl.style.color=
-        'var(--teal)';
-
-
-      statusEl.style.borderColor=
-        'var(--teal)';
-
-
-      listEl.innerHTML =
-        slideBlocks
-          .map((b,i)=>{
-
-            return `
-              <div>
-                <b>Slide ${i+1}:</b>
-                ${
-                  b.lines
-                    .map(l=>
-                      `${escapeHTML(l.speaker)}: ${escapeHTML(l.text)}`
-                    )
-                    .join(' | ')
-                }
-              </div>
-            `;
-
-          })
-          .join('');
-
-
-      /*
-        IMPORTANT:
-
-        A slide now supports 1, 2, or 3 dialogues.
-
-        We intentionally keep the maximum at 3 because
-        that is the requested layout.
-      */
-
-      slides =
-        slideBlocks.map(b=>{
-
-          const lines =
-            b.lines
-              .slice(0,3)
-              .map(line=>({
-
-                ...line,
-
-                frameDataURL:null,
-
-                zoom:1.6,
-
-                centerX:0.5,
-
-                centerY:0.35,
-
-                captionX:0.5,
-
-                captionY:null
-
-              }));
-
-
-          lines.forEach(
-            (line,lineIndex)=>{
-
-              line.captionY =
-                getCaptionDefaultY(
-                  lineIndex,
-                  lines.length
-                );
-
-            }
-          );
-
-
-          return {
-
-            lines,
-
-            composedDataURL:null
-
-          };
-
-        });
-
-
-      setTimeout(
-        ()=>goToStep(3),
-        300
+    scriptLines =
+      slideBlocks.flatMap(
+        b => b.lines
       );
 
-    }
-  );
+
+    statusEl.style.display = 'inline-block';
+
+    statusEl.textContent =
+      `${slideBlocks.length} slides / ${scriptLines.length} lines parsed`;
+
+    statusEl.style.color =
+      'var(--teal)';
+
+    statusEl.style.borderColor =
+      'var(--teal)';
 
 
-// ============================================================
-// INDEXED DB
-// ============================================================
+    listEl.innerHTML =
+      slideBlocks
+        .map((b,i) => {
+
+          return `
+            <div>
+              <b>Slide ${i+1}:</b>
+              ${b.lines
+                .map(l => `${l.speaker}: ${escapeHTML(l.text)}`)
+                .join(' | ')}
+            </div>
+          `;
+
+        })
+        .join('');
+
+
+    /*
+      IMPORTANT:
+      Preserve existing slide state when parsing the same
+      structure where possible.
+
+      This prevents unnecessary resets.
+    */
+
+    slides =
+      slideBlocks.map((b, slideIndex) => {
+
+        const oldSlide = slides[slideIndex];
+
+        return {
+          top:makeDialogueState(
+            b.lines[0],
+            oldSlide?.top
+          ),
+
+          bottom:makeDialogueState(
+            b.lines[1],
+            oldSlide?.bottom
+          ),
+
+          third:makeDialogueState(
+            b.lines[2],
+            oldSlide?.third
+          ),
+
+          composedDataURL:
+            oldSlide?.composedDataURL || null
+        };
+
+      });
+
+
+    setTimeout(() => goToStep(3), 300);
+
+  });
+
+
+/* =========================================================
+   DIALOGUE STATE
+========================================================= */
+
+function makeDialogueState(line, old){
+
+  if(!line) return null;
+
+  return {
+
+    speaker:line.speaker,
+
+    text:line.text,
+
+    frameDataURL:
+      old?.frameDataURL || null,
+
+    zoom:
+      old?.zoom ?? 1.6,
+
+    centerX:
+      old?.centerX ?? 0.5,
+
+    centerY:
+      old?.centerY ?? 0.35,
+
+    /*
+      x/y = position of the text box
+      expressed as a fraction of the slide.
+
+      0.5 / 0.5 = center.
+    */
+
+    textX:
+      old?.textX ?? 0.5,
+
+    textY:
+      old?.textY ?? 0.5
+
+  };
+
+}
+
+
+/* =========================================================
+   INDEXED DB
+========================================================= */
 
 function openKVDB(){
 
-  return new Promise(
-    (resolve,reject)=>{
+  return new Promise((resolve,reject) => {
 
-      const req =
-        indexedDB.open(
-          'carouselCutterDB_v2',
-          1
+    const req =
+      indexedDB.open(
+        'carouselCutterDB_v2',
+        1
+      );
+
+    req.onupgradeneeded = () => {
+
+      const db = req.result;
+
+      if(!db.objectStoreNames.contains('kv')){
+
+        db.createObjectStore(
+          'kv',
+          {keyPath:'key'}
         );
 
+      }
 
-      req.onupgradeneeded=()=>{
+    };
 
-        const db=req.result;
+    req.onsuccess =
+      () => resolve(req.result);
 
+    req.onerror =
+      () => reject(req.error);
 
-        if(
-          !db.objectStoreNames.contains('kv')
-        ){
-
-          db.createObjectStore(
-            'kv',
-            {
-              keyPath:'key'
-            }
-          );
-
-        }
-
-      };
-
-
-      req.onsuccess=()=>{
-        resolve(req.result);
-      };
-
-
-      req.onerror=()=>{
-        reject(req.error);
-      };
-
-    }
-  );
+  });
 
 }
 
 
 async function idbGet(key){
 
-  const db=await openKVDB();
+  const db =
+    await openKVDB();
 
+  return new Promise((resolve,reject) => {
 
-  return new Promise(
-    (resolve,reject)=>{
+    const tx =
+      db.transaction(
+        'kv',
+        'readonly'
+      );
 
-      const tx =
-        db.transaction(
-          'kv',
-          'readonly'
-        );
+    const req =
+      tx.objectStore('kv').get(key);
 
+    req.onsuccess =
+      () => resolve(
+        req.result
+          ? req.result.value
+          : null
+      );
 
-      const req =
-        tx.objectStore('kv').get(key);
+    req.onerror =
+      () => reject(req.error);
 
-
-      req.onsuccess=()=>{
-
-        resolve(
-          req.result
-            ?req.result.value
-            :null
-        );
-
-      };
-
-
-      req.onerror=()=>{
-        reject(req.error);
-      };
-
-    }
-  );
+  });
 
 }
 
 
 async function idbSet(key,value){
 
-  const db=await openKVDB();
+  const db =
+    await openKVDB();
 
+  return new Promise((resolve,reject) => {
 
-  return new Promise(
-    (resolve,reject)=>{
+    const tx =
+      db.transaction(
+        'kv',
+        'readwrite'
+      );
 
-      const tx =
-        db.transaction(
-          'kv',
-          'readwrite'
-        );
-
-
-      tx.objectStore('kv').put({
+    tx
+      .objectStore('kv')
+      .put({
         key,
         value
       });
 
+    tx.oncomplete =
+      () => resolve(true);
 
-      tx.oncomplete=()=>{
-        resolve(true);
-      };
+    tx.onerror =
+      () => reject(tx.error);
 
-
-      tx.onerror=()=>{
-        reject(tx.error);
-      };
-
-    }
-  );
+  });
 
 }
 
 
 async function idbDelete(key){
 
-  const db=await openKVDB();
+  const db =
+    await openKVDB();
 
+  return new Promise((resolve,reject) => {
 
-  return new Promise(
-    (resolve,reject)=>{
+    const tx =
+      db.transaction(
+        'kv',
+        'readwrite'
+      );
 
-      const tx =
-        db.transaction(
-          'kv',
-          'readwrite'
-        );
+    tx
+      .objectStore('kv')
+      .delete(key);
 
+    tx.oncomplete =
+      () => resolve(true);
 
-      tx.objectStore('kv').delete(key);
+    tx.onerror =
+      () => reject(tx.error);
 
-
-      tx.oncomplete=()=>{
-        resolve(true);
-      };
-
-
-      tx.onerror=()=>{
-        reject(tx.error);
-      };
-
-    }
-  );
+  });
 
 }
 
 
 async function idbListByPrefix(prefix){
 
-  const db=await openKVDB();
+  const db =
+    await openKVDB();
 
+  return new Promise((resolve,reject) => {
 
-  return new Promise(
-    (resolve,reject)=>{
+    const tx =
+      db.transaction(
+        'kv',
+        'readonly'
+      );
 
-      const tx =
-        db.transaction(
-          'kv',
-          'readonly'
+    const req =
+      tx.objectStore('kv').getAll();
+
+    req.onsuccess = () => {
+
+      const rows =
+        req.result.filter(
+          r => r.key.startsWith(prefix)
         );
 
+      resolve(rows);
 
-      const req =
-        tx.objectStore('kv').getAll();
+    };
 
+    req.onerror =
+      () => reject(req.error);
 
-      req.onsuccess=()=>{
-
-        resolve(
-          req.result.filter(
-            r=>r.key.startsWith(prefix)
-          )
-        );
-
-      };
-
-
-      req.onerror=()=>{
-        reject(req.error);
-      };
-
-    }
-  );
+  });
 
 }
 
 
-// ============================================================
-// FONT
-// ============================================================
+/* =========================================================
+   FONT
+========================================================= */
 
-async function saveFontData(
-  name,
-  base64
-){
+async function saveFontData(name,base64){
 
   try{
 
@@ -2002,22 +1637,16 @@ async function loadSavedFont(){
   try{
 
     const raw =
-      await idbGet(
-        'custom-font'
-      );
-
+      await idbGet('custom-font');
 
     if(raw){
 
       const saved =
         JSON.parse(raw);
 
-
       await applyFontBuffer(
-        base64ToArrayBuffer(
-          saved.base64
-        ),
-        saved.name+' (saved)'
+        base64ToArrayBuffer(saved.base64),
+        saved.name + ' (saved)'
       );
 
     }
@@ -2029,13 +1658,12 @@ async function loadSavedFont(){
 
 function arrayBufferToBase64(buf){
 
-  let binary='';
+  let binary = '';
 
   const bytes =
     new Uint8Array(buf);
 
-  const chunk=0x8000;
-
+  const chunk = 0x8000;
 
   for(
     let i=0;
@@ -2054,7 +1682,6 @@ function arrayBufferToBase64(buf){
 
   }
 
-
   return btoa(binary);
 
 }
@@ -2062,13 +1689,13 @@ function arrayBufferToBase64(buf){
 
 function base64ToArrayBuffer(b64){
 
-  const binary=atob(b64);
+  const binary =
+    atob(b64);
 
   const bytes =
     new Uint8Array(
       binary.length
     );
-
 
   for(
     let i=0;
@@ -2076,21 +1703,17 @@ function base64ToArrayBuffer(b64){
     i++
   ){
 
-    bytes[i]=
+    bytes[i] =
       binary.charCodeAt(i);
 
   }
-
 
   return bytes.buffer;
 
 }
 
 
-async function applyFontBuffer(
-  buf,
-  name
-){
+async function applyFontBuffer(buf,name){
 
   const font =
     new FontFace(
@@ -2098,20 +1721,16 @@ async function applyFontBuffer(
       buf
     );
 
-
   await font.load();
-
 
   document.fonts.add(font);
 
+  customFontLoaded = true;
 
-  customFontLoaded=true;
-
-
-  document.getElementById(
-    'fontStatus'
-  ).textContent =
-    `Using: ${name}`;
+  document
+    .getElementById('fontStatus')
+    .textContent =
+      `Using: ${name}`;
 
 }
 
@@ -2120,22 +1739,20 @@ document
   .getElementById('fontInput')
   .addEventListener(
     'change',
-    async e=>{
+    async e => {
 
-      const file=e.target.files[0];
+      const file =
+        e.target.files[0];
 
       if(!file) return;
 
-
       const buf =
         await file.arrayBuffer();
-
 
       await applyFontBuffer(
         buf,
         file.name
       );
-
 
       await saveFontData(
         file.name,
@@ -2155,57 +1772,51 @@ function getStyleConfig(){
 
     fontSize:
       parseInt(
-        document.getElementById(
-          'fontSize'
-        ).value
+        document
+          .getElementById('fontSize')
+          .value
       ) || 44,
 
-
     textColor:
-      document.getElementById(
-        'textColor'
-      ).value || '#FFFFFF',
-
+      document
+        .getElementById('textColor')
+        .value || '#FFFFFF',
 
     shadowColor:
-      document.getElementById(
-        'shadowColor'
-      ).value || '#000000',
-
+      document
+        .getElementById('shadowColor')
+        .value || '#000000',
 
     dropAmount:
       parseFloat(
-        document.getElementById(
-          'dropAmount'
-        ).value
+        document
+          .getElementById('dropAmount')
+          .value
       ) || 0,
-
 
     fontFamily:
       customFontLoaded
-        ?'CaptionFont'
-        :'Arial'
+        ? 'CaptionFont'
+        : 'Arial'
 
   };
 
 }
 
 
-// ============================================================
-// VIDEO SCRUBBER
-// ============================================================
+/* =========================================================
+   VIDEO SCRUBBER
+========================================================= */
 
 const vp =
   document.getElementById(
     'videoPreview'
   );
 
-
 const scrubber =
   document.getElementById(
     'scrubber'
   );
-
 
 const timecodeLabel =
   document.getElementById(
@@ -2215,24 +1826,25 @@ const timecodeLabel =
 
 scrubber.addEventListener(
   'input',
-  ()=>{
+  () => {
+
     vp.currentTime =
       parseFloat(
         scrubber.value
       );
+
   }
 );
 
 
 vp.addEventListener(
   'timeupdate',
-  ()=>{
+  () => {
 
-    scrubber.value=
+    scrubber.value =
       vp.currentTime;
 
-
-    timecodeLabel.textContent=
+    timecodeLabel.textContent =
       fmtTime(
         vp.currentTime
       );
@@ -2245,12 +1857,12 @@ document
   .getElementById('stepBack')
   .addEventListener(
     'click',
-    ()=>{
+    () => {
 
-      vp.currentTime=
+      vp.currentTime =
         Math.max(
           0,
-          vp.currentTime-0.033
+          vp.currentTime - 0.033
         );
 
     }
@@ -2261,12 +1873,12 @@ document
   .getElementById('stepFwd')
   .addEventListener(
     'click',
-    ()=>{
+    () => {
 
-      vp.currentTime=
+      vp.currentTime =
         Math.min(
           vp.duration,
-          vp.currentTime+0.033
+          vp.currentTime + 0.033
         );
 
     }
@@ -2275,7 +1887,7 @@ document
 
 document.addEventListener(
   'keydown',
-  e=>{
+  e => {
 
     const activeTag =
       (
@@ -2283,17 +1895,12 @@ document.addEventListener(
         document.activeElement.tagName
       ) || '';
 
-
-    if(
-      [
-        'INPUT',
-        'TEXTAREA',
-        'SELECT'
-      ].includes(activeTag)
-    ){
-
+    if([
+      'INPUT',
+      'TEXTAREA',
+      'SELECT'
+    ].includes(activeTag)){
       return;
-
     }
 
 
@@ -2302,41 +1909,38 @@ document.addEventListener(
         'panel-4'
       );
 
-
     if(
       !panel4 ||
-      panel4.style.display==='none'
+      panel4.style.display === 'none'
     ){
-
       return;
-
     }
 
 
     if(!vp.duration) return;
 
 
-    if(e.key==='ArrowRight'){
+    if(e.key === 'ArrowRight'){
 
       e.preventDefault();
 
       vp.currentTime =
         Math.min(
           vp.duration,
-          vp.currentTime+5
+          vp.currentTime + 5
         );
 
     }
 
 
-    else if(e.key==='ArrowLeft'){
+    else if(e.key === 'ArrowLeft'){
 
       e.preventDefault();
 
       vp.currentTime =
         Math.max(
           0,
-          vp.currentTime-5
+          vp.currentTime - 5
         );
 
     }
@@ -2347,50 +1951,46 @@ document.addEventListener(
 
 function fmtTime(t){
 
-  if(!isFinite(t)) return '00:00.0';
-
+  if(!isFinite(t)) t = 0;
 
   const m =
     Math.floor(t/60)
       .toString()
       .padStart(2,'0');
 
-
   const s =
     (t%60)
       .toFixed(1)
       .padStart(4,'0');
-
 
   return `${m}:${s}`;
 
 }
 
 
-// ============================================================
-// FRAME CAPTURE
-// ============================================================
+/* =========================================================
+   CAPTURE FRAME
+========================================================= */
 
 function captureCurrentFrame(){
 
   const c =
-    document.createElement(
-      'canvas'
+    document.createElement('canvas');
+
+  c.width =
+    vp.videoWidth;
+
+  c.height =
+    vp.videoHeight;
+
+  c.getContext('2d')
+    .drawImage(
+      vp,
+      0,
+      0,
+      c.width,
+      c.height
     );
-
-
-  c.width=vp.videoWidth;
-  c.height=vp.videoHeight;
-
-
-  c.getContext('2d').drawImage(
-    vp,
-    0,
-    0,
-    c.width,
-    c.height
-  );
-
 
   return c.toDataURL(
     'image/jpeg',
@@ -2400,1641 +2000,116 @@ function captureCurrentFrame(){
 }
 
 
-// ============================================================
-// COPY OPTIONS
-// ============================================================
+/* =========================================================
+   COPY OPTIONS
+========================================================= */
 
 function buildCopyOptions(
   currentIdx,
-  currentLineIdx
+  currentHalf
 ){
 
-  let opts='';
-
+  let opts = '';
 
   slides.forEach(
-    (s,sIdx)=>{
+    (s,sIdx) => {
 
-      s.lines.forEach(
-        (line,lIdx)=>{
+      ['top','bottom','third']
+        .forEach(h => {
 
-          if(!line.frameDataURL){
-            return;
-          }
-
+          const half =
+            s[h];
 
           if(
-            sIdx===currentIdx &&
-            lIdx===currentLineIdx
+            !half ||
+            !half.frameDataURL
           ){
-
             return;
-
           }
 
+          if(
+            sIdx === currentIdx &&
+            h === currentHalf
+          ){
+            return;
+          }
 
-          opts +=
-            `<option value="${sIdx}|${lIdx}">
-              ${sIdx+1} ${lIdx+1} — ${escapeHTML(line.speaker)}
-            </option>`;
+          const label =
+            h === 'top'
+              ? 'Top'
+              : h === 'bottom'
+                ? 'Middle'
+                : 'Bottom';
 
-        }
-      );
+          opts += `
+            <option value="${sIdx}|${h}">
+              ${sIdx+1} ${label} (${escapeHTML(half.speaker)})
+            </option>
+          `;
+
+        });
 
     }
   );
-
 
   return opts;
 
 }
 
 
-// ============================================================
-// ESCAPE HTML
-// ============================================================
+/* =========================================================
+   ESCAPE
+========================================================= */
 
 function escapeHTML(str){
 
   const d =
-    document.createElement(
-      'div'
-    );
-
+    document.createElement('div');
 
   d.textContent =
     str || '';
-
 
   return d.innerHTML;
 
 }
 
 
-// ============================================================
-// CAPTION DEFAULT POSITION
-// ============================================================
+/* =========================================================
+   THUMB IMAGE
+========================================================= */
 
-function getCaptionDefaultY(
-  lineIndex,
-  totalLines
-){
+function loadCachedImg(src){
 
-  /*
-    Put the text near the bottom of each horizontal
-    section by default.
+  if(imgCache[src]){
+    return Promise.resolve(
+      imgCache[src]
+    );
+  }
 
-    Example:
+  return new Promise(resolve => {
 
-    1 dialogue:
-      95%
+    const im =
+      new Image();
 
-    2 dialogues:
-      45%
-      95%
+    im.onload = () => {
 
-    3 dialogues:
-      28%
-      62%
-      95%
-  */
+      imgCache[src] =
+        im;
 
-  return (
-    (lineIndex+1) /
-    totalLines
-  ) - 0.045;
+      resolve(im);
+
+    };
+
+    im.src = src;
+
+  });
 
 }
 
 
-// ============================================================
-// CAPTION FONT SIZE
-// ============================================================
-
-function syncEditableFontSize(idx){
-
-  const canvas =
-    document.querySelector(
-      `.slideCanvas[data-idx="${idx}"]`
-    );
-
-
-  if(!canvas) return;
-
-
-  const style =
-    getStyleConfig();
-
-
-  const rect =
-    canvas.getBoundingClientRect();
-
-
-  const scale =
-    rect.width /
-    canvas.width;
-
-
-  const px =
-    Math.max(
-      8,
-      style.fontSize*scale
-    );
-
-
-  document
-    .querySelectorAll(
-      `.caption-editable[data-idx="${idx}"]`
-    )
-    .forEach(el=>{
-
-      el.style.fontSize=
-        px+'px';
-
-    });
-
-}
-
-
-// ============================================================
-// BIND CAPTION BOX
-// ============================================================
-
-function bindCaptionEditable(
-  el,
-  container
-){
-
-  const idx =
-    parseInt(
-      el.dataset.idx
-    );
-
-
-  const lineIndex =
-    parseInt(
-      el.dataset.line
-    );
-
-
-  const slide =
-    slides[idx];
-
-
-  const line =
-    slide.lines[lineIndex];
-
-
-  let debounceTimer=null;
-
-
-  // ----------------------------------------------------------
-  // POSITION
-  // ----------------------------------------------------------
-
-  if(line.captionX==null){
-
-    line.captionX=0.5;
-
-  }
-
-
-  if(line.captionY==null){
-
-    line.captionY =
-      getCaptionDefaultY(
-        lineIndex,
-        slide.lines.length
-      );
-
-  }
-
-
-  function updateBoxPosition(){
-
-    /*
-      Move ONLY the HTML text box.
-      Nothing happens to the canvas.
-    */
-
-    el.style.left =
-      (line.captionX*100)+'%';
-
-
-    el.style.top =
-      (line.captionY*100)+'%';
-
-  }
-
-
-  updateBoxPosition();
-
-
-  // ----------------------------------------------------------
-  // SELECT BOX
-  // ----------------------------------------------------------
-
-  el.addEventListener(
-    'click',
-    e=>{
-
-      e.stopPropagation();
-
-
-      document
-        .querySelectorAll(
-          '.caption-editable.selected'
-        )
-        .forEach(other=>{
-
-          if(other!==el){
-
-            other.classList.remove(
-              'selected'
-            );
-
-          }
-
-        });
-
-
-      el.classList.add(
-        'selected'
-      );
-
-    }
-  );
-
-
-  // ----------------------------------------------------------
-  // CLICK OUTSIDE = DESELECT
-  // ----------------------------------------------------------
-
-  document.addEventListener(
-    'click',
-    e=>{
-
-      if(!el.contains(e.target)){
-
-        el.classList.remove(
-          'selected'
-        );
-
-      }
-
-    }
-  );
-
-
-  // ----------------------------------------------------------
-  // TEXT EDITING
-  // ----------------------------------------------------------
-
-  function syncText(){
-
-    const text =
-      el.innerText
-        .replace(/\n+$/,'');
-
-
-    line.text=text;
-
-
-    const quoteEl =
-      container.querySelector(
-        `.half-capture[data-idx="${idx}"][data-line="${lineIndex}"] .line-text`
-      );
-
-
-    if(quoteEl){
-
-      quoteEl.textContent =
-        `"${text}"`;
-
-    }
-
-
-    /*
-      Compose AFTER editing.
-
-      This is NOT called while dragging.
-    */
-
-    composeSlide(idx);
-
-  }
-
-
-  el.addEventListener(
-    'input',
-    ()=>{
-
-      clearTimeout(
-        debounceTimer
-      );
-
-
-      debounceTimer =
-        setTimeout(
-          syncText,
-          500
-        );
-
-    }
-  );
-
-
-  el.addEventListener(
-    'keydown',
-    e=>{
-
-      if(e.key==='Enter'){
-
-        e.stopPropagation();
-
-        clearTimeout(
-          debounceTimer
-        );
-
-
-        debounceTimer =
-          setTimeout(
-            syncText,
-            300
-          );
-
-      }
-
-    }
-  );
-
-
-  el.addEventListener(
-    'focus',
-    ()=>{
-
-      el.classList.add(
-        'selected'
-      );
-
-    }
-  );
-
-
-  el.addEventListener(
-    'blur',
-    ()=>{
-
-      clearTimeout(
-        debounceTimer
-      );
-
-
-      syncText();
-
-    }
-  );
-
-
-  // ----------------------------------------------------------
-  // DRAGGING
-  // ----------------------------------------------------------
-
-  let dragging=false;
-
-  let moved=false;
-
-  let pointerStartX=0;
-  let pointerStartY=0;
-
-  let originalX=0;
-  let originalY=0;
-
-
-  el.addEventListener(
-    'pointerdown',
-    e=>{
-
-      /*
-        Start tracking the pointer.
-
-        We do NOT immediately preventDefault,
-        because a normal click should still allow
-        text editing.
-      */
-
-      dragging=true;
-
-      moved=false;
-
-
-      pointerStartX=
-        e.clientX;
-
-
-      pointerStartY=
-        e.clientY;
-
-
-      originalX=
-        line.captionX;
-
-
-      originalY=
-        line.captionY;
-
-
-      el.classList.add(
-        'selected'
-      );
-
-
-      try{
-
-        el.setPointerCapture(
-          e.pointerId
-        );
-
-      }catch(err){}
-
-    }
-  );
-
-
-  el.addEventListener(
-    'pointermove',
-    e=>{
-
-      if(!dragging){
-        return;
-      }
-
-
-      const dx =
-        e.clientX-
-        pointerStartX;
-
-
-      const dy =
-        e.clientY-
-        pointerStartY;
-
-
-      /*
-        Small movement = normal click.
-
-        Bigger movement = actual drag.
-      */
-
-      if(!moved){
-
-        if(
-          Math.abs(dx)<4 &&
-          Math.abs(dy)<4
-        ){
-
-          return;
-
-        }
-
-
-        moved=true;
-
-
-        /*
-          Now we are definitely dragging.
-
-          Stop text selection.
-        */
-
-        e.preventDefault();
-
-
-        el.blur();
-
-
-        el.classList.add(
-          'dragging'
-        );
-
-      }
-
-
-      if(!moved){
-        return;
-      }
-
-
-      const wrap =
-        el.closest(
-          '.slide-preview-wrap'
-        );
-
-
-      const rect =
-        wrap.getBoundingClientRect();
-
-
-      /*
-        Convert mouse movement into
-        normalized canvas coordinates.
-      */
-
-      let newX =
-        originalX +
-        dx/rect.width;
-
-
-      let newY =
-        originalY +
-        dy/rect.height;
-
-
-      /*
-        Keep the box inside the slide.
-      */
-
-      const paddingX=0.06;
-
-      const paddingY=0.035;
-
-
-      newX =
-        Math.max(
-          paddingX,
-          Math.min(
-            1-paddingX,
-            newX
-          )
-        );
-
-
-      newY =
-        Math.max(
-          paddingY,
-          Math.min(
-            1-paddingY,
-            newY
-          )
-        );
-
-
-      /*
-        THIS IS THE IMPORTANT FIX:
-
-        We ONLY change captionX / captionY.
-
-        We DO NOT call composeSlide().
-
-        Therefore the image underneath stays
-        completely frozen while the box moves.
-      */
-
-      line.captionX=newX;
-
-      line.captionY=newY;
-
-
-      updateBoxPosition();
-
-    }
-  );
-
-
-  function finishDrag(e){
-
-    if(!dragging){
-      return;
-    }
-
-
-    dragging=false;
-
-
-    el.classList.remove(
-      'dragging'
-    );
-
-
-    if(moved){
-
-      /*
-        The user has released the box.
-
-        NOW we update the actual canvas.
-      */
-
-      if(e){
-        e.preventDefault();
-      }
-
-
-      composeSlide(idx);
-
-    }
-
-
-    moved=false;
-
-  }
-
-
-  el.addEventListener(
-    'pointerup',
-    finishDrag
-  );
-
-
-  el.addEventListener(
-    'pointercancel',
-    finishDrag
-  );
-
-
-  // ----------------------------------------------------------
-  // FONT SIZE
-  // ----------------------------------------------------------
-
-  syncEditableFontSize(idx);
-
-}
-
-
-// ============================================================
-// RENDER SLIDE CARDS
-// ============================================================
-
-function renderSlideCards(){
-
-  const container =
-    document.getElementById(
-      'slidesContainer'
-    );
-
-
-  /*
-    IMPORTANT:
-
-    Rendering the cards does NOT erase composedDataURL.
-
-    Existing composed slides are restored after the DOM
-    is recreated.
-  */
-
-  container.innerHTML='';
-
-
-  slides.forEach(
-    (slide,idx)=>{
-
-      /*
-        Backward compatibility with old projects.
-      */
-
-      if(!Array.isArray(slide.lines)){
-
-        const oldLines=[];
-
-
-        if(slide.top){
-          oldLines.push(slide.top);
-        }
-
-
-        if(slide.bottom){
-          oldLines.push(slide.bottom);
-        }
-
-
-        slide.lines=oldLines;
-
-      }
-
-
-      /*
-        Ensure every line has all required positioning data.
-      */
-
-      slide.lines.forEach(
-        (line,lineIndex)=>{
-
-          if(line.zoom==null){
-            line.zoom=1.6;
-          }
-
-
-          if(line.centerX==null){
-            line.centerX=0.5;
-          }
-
-
-          if(line.centerY==null){
-            line.centerY=0.35;
-          }
-
-
-          if(line.captionX==null){
-            line.captionX=0.5;
-          }
-
-
-          if(line.captionY==null){
-
-            line.captionY =
-              getCaptionDefaultY(
-                lineIndex,
-                slide.lines.length
-              );
-
-          }
-
-        }
-      );
-
-
-      const card =
-        document.createElement(
-          'div'
-        );
-
-
-      card.className='slide-card';
-
-
-      /*
-        3 dialogue slide gets a 4-column layout:
-
-        [ TOP ] [ MIDDLE ] [ BOTTOM ] [ PREVIEW ]
-
-        The FINAL IMAGE is still three horizontal sections.
-      */
-
-      if(slide.lines.length===3){
-
-        card.classList.add(
-          'three-dialogue'
-        );
-
-      }
-
-
-      let captureHTML='';
-
-
-      slide.lines.forEach(
-        (line,lineIndex)=>{
-
-          let sectionName='Full';
-
-
-          if(slide.lines.length===2){
-
-            sectionName =
-              lineIndex===0
-                ?'Top'
-                :'Bottom';
-
-          }
-
-
-          if(slide.lines.length===3){
-
-            sectionName =
-              lineIndex===0
-                ?'Top'
-                :lineIndex===1
-                  ?'Middle'
-                  :'Bottom';
-
-          }
-
-
-          captureHTML += `
-
-            <div
-              class="half-capture"
-              data-idx="${idx}"
-              data-line="${lineIndex}"
-            >
-
-              <h4>
-
-                <span class="slide-num">
-                  ${idx+1}
-                </span>
-
-                — ${sectionName} —
-                ${escapeHTML(line.speaker)}
-
-              </h4>
-
-
-              <div class="line-text">
-                "${escapeHTML(line.text)}"
-              </div>
-
-
-              ${
-                line.frameDataURL
-                ?
-
-                `
-
-                <canvas
-                  class="thumb thumbCanvas"
-                  data-idx="${idx}"
-                  data-line="${lineIndex}"
-                ></canvas>
-
-
-                <div class="zoom-row">
-
-                  <span class="hint">
-                    Zoom
-                  </span>
-
-
-                  <input
-                    type="range"
-                    class="zoomSlider"
-                    data-idx="${idx}"
-                    data-line="${lineIndex}"
-                    min="1"
-                    max="3"
-                    step="0.05"
-                    value="${line.zoom}"
-                  >
-
-                </div>
-
-
-                <div class="hint">
-                  Drag to reposition · scroll to zoom
-                </div>
-
-                `
-
-                :
-
-                `
-
-                <div class="thumb empty">
-                  No frame captured yet
-                </div>
-
-                `
-              }
-
-
-              <div class="copy-row">
-
-                <select
-                  class="copySourceSelect"
-                  data-idx="${idx}"
-                  data-line="${lineIndex}"
-                >
-
-                  <option value="">
-                    Duplicate from…
-                  </option>
-
-                  ${buildCopyOptions(
-                    idx,
-                    lineIndex
-                  )}
-
-                </select>
-
-
-                <button
-                  class="copyBtn"
-                  data-idx="${idx}"
-                  data-line="${lineIndex}"
-                >
-                  Copy
-                </button>
-
-              </div>
-
-
-              <button
-                class="captureBtn"
-                data-idx="${idx}"
-                data-line="${lineIndex}"
-              >
-                Capture frame at ${fmtTime(vp.currentTime)}
-              </button>
-
-            </div>
-
-          `;
-
-        }
-      );
-
-
-      let captionHTML='';
-
-
-      slide.lines.forEach(
-        (line,lineIndex)=>{
-
-          captionHTML += `
-
-            <div
-              class="caption-editable"
-              data-idx="${idx}"
-              data-line="${lineIndex}"
-              contenteditable="true"
-              spellcheck="false"
-            >
-              ${escapeHTML(line.text)}
-            </div>
-
-          `;
-
-        }
-      );
-
-
-      card.innerHTML = `
-
-        ${captureHTML}
-
-
-        <div class="slide-preview">
-
-          <div class="slide-preview-wrap">
-
-            <canvas
-              class="slideCanvas"
-              data-idx="${idx}"
-              width="1080"
-              height="1350"
-            ></canvas>
-
-
-            ${captionHTML}
-
-          </div>
-
-
-          <div class="edit-hint">
-
-            Click a caption to select it.
-            Drag the selected box to move it.
-            The image will stay still while moving.
-
-          </div>
-
-
-          <button
-            class="composeBtn"
-            data-idx="${idx}"
-          >
-            Compose slide
-          </button>
-
-        </div>
-
-      `;
-
-
-      container.appendChild(card);
-
-
-    }
-  );
-
-
-  // ==========================================================
-  // CAPTIONS
-  // ==========================================================
-
-  container
-    .querySelectorAll(
-      '.caption-editable'
-    )
-    .forEach(el=>{
-
-      bindCaptionEditable(
-        el,
-        container
-      );
-
-    });
-
-
-  // ==========================================================
-  // COPY
-  // ==========================================================
-
-  container
-    .querySelectorAll(
-      '.copyBtn'
-    )
-    .forEach(btn=>{
-
-      btn.addEventListener(
-        'click',
-        ()=>{
-
-          const idx =
-            parseInt(
-              btn.dataset.idx
-            );
-
-
-          const lineIndex =
-            parseInt(
-              btn.dataset.line
-            );
-
-
-          const select =
-            container.querySelector(
-              `.copySourceSelect[data-idx="${idx}"][data-line="${lineIndex}"]`
-            );
-
-
-          const val=select.value;
-
-
-          if(!val){
-            return;
-          }
-
-
-          const [
-            srcIdxStr,
-            srcLineStr
-          ] =
-            val.split('|');
-
-
-          const src =
-            slides[
-              parseInt(srcIdxStr)
-            ].lines[
-              parseInt(srcLineStr)
-            ];
-
-
-          const destination =
-            slides[idx].lines[lineIndex];
-
-
-          destination.frameDataURL =
-            src.frameDataURL;
-
-
-          destination.zoom =
-            src.zoom;
-
-
-          destination.centerX =
-            src.centerX;
-
-
-          destination.centerY =
-            src.centerY;
-
-
-          /*
-            Keep destination caption position.
-          */
-
-
-          /*
-            Only this slide's composition becomes
-            stale after changing its image.
-          */
-
-          slides[idx].composedDataURL=null;
-
-
-          renderSlideCards();
-
-
-          composeSlide(idx);
-
-        }
-      );
-
-    });
-
-
-  // ==========================================================
-  // CAPTURE
-  // ==========================================================
-
-  container
-    .querySelectorAll(
-      '.captureBtn'
-    )
-    .forEach(btn=>{
-
-      btn.addEventListener(
-        'click',
-        ()=>{
-
-          const idx =
-            parseInt(
-              btn.dataset.idx
-            );
-
-
-          const lineIndex =
-            parseInt(
-              btn.dataset.line
-            );
-
-
-          const line =
-            slides[idx].lines[lineIndex];
-
-
-          line.frameDataURL =
-            captureCurrentFrame();
-
-
-          line.zoom =
-            line.zoom || 1.6;
-
-
-          line.centerX =
-            line.centerX ?? 0.5;
-
-
-          line.centerY =
-            line.centerY ?? 0.35;
-
-
-          if(line.captionX==null){
-            line.captionX=0.5;
-          }
-
-
-          if(line.captionY==null){
-
-            line.captionY =
-              getCaptionDefaultY(
-                lineIndex,
-                slides[idx].lines.length
-              );
-
-          }
-
-
-          /*
-            The captured image changed, so only this
-            slide's old composition is invalid.
-
-            Other slides remain exactly as they were.
-          */
-
-          slides[idx].composedDataURL=null;
-
-
-          renderSlideCards();
-
-        }
-      );
-
-    });
-
-
-  // ==========================================================
-  // COMPOSE
-  // ==========================================================
-
-  container
-    .querySelectorAll(
-      '.composeBtn'
-    )
-    .forEach(btn=>{
-
-      btn.addEventListener(
-        'click',
-        ()=>{
-
-          composeSlide(
-            parseInt(
-              btn.dataset.idx
-            )
-          );
-
-        }
-      );
-
-    });
-
-
-  // ==========================================================
-  // THUMBNAILS
-  // ==========================================================
-
-  container
-    .querySelectorAll(
-      '.thumbCanvas'
-    )
-    .forEach(c=>{
-
-      paintThumb(
-        parseInt(c.dataset.idx),
-        parseInt(c.dataset.line)
-      );
-
-    });
-
-
-  // ==========================================================
-  // ZOOM
-  // ==========================================================
-
-  container
-    .querySelectorAll(
-      '.zoomSlider'
-    )
-    .forEach(sl=>{
-
-      sl.addEventListener(
-        'input',
-        ()=>{
-
-          const idx =
-            parseInt(
-              sl.dataset.idx
-            );
-
-
-          const lineIndex =
-            parseInt(
-              sl.dataset.line
-            );
-
-
-          slides[idx].lines[lineIndex].zoom =
-            parseFloat(
-              sl.value
-            );
-
-
-          paintThumb(
-            idx,
-            lineIndex
-          );
-
-
-          /*
-            Zoom changes the image, so we compose
-            this slide only.
-          */
-
-          composeSlide(idx);
-
-        }
-      );
-
-    });
-
-
-  // ==========================================================
-  // THUMBNAIL DRAG / ZOOM
-  // ==========================================================
-
-  container
-    .querySelectorAll(
-      '.thumbCanvas'
-    )
-    .forEach(c=>{
-
-      let dragging=false;
-
-      let start=null;
-
-
-      function getSourceExtent(
-        line,
-        img,
-        rect
-      ){
-
-        const tr =
-          rect.width /
-          rect.height;
-
-
-        const ir =
-          img.width /
-          img.height;
-
-
-        let baseW;
-        let baseH;
-
-
-        if(ir>tr){
-
-          baseH=img.height;
-
-          baseW=
-            baseH*tr;
-
-        }else{
-
-          baseW=img.width;
-
-          baseH=
-            baseW/tr;
-
-        }
-
-
-        const z =
-          line.zoom || 1;
-
-
-        return {
-
-          sw:
-            baseW/z,
-
-          sh:
-            baseH/z
-
-        };
-
-      }
-
-
-      c.addEventListener(
-        'pointerdown',
-        e=>{
-
-          const idx =
-            parseInt(
-              c.dataset.idx
-            );
-
-
-          const lineIndex =
-            parseInt(
-              c.dataset.line
-            );
-
-
-          const line =
-            slides[idx].lines[lineIndex];
-
-
-          dragging=true;
-
-
-          c.setPointerCapture(
-            e.pointerId
-          );
-
-
-          start={
-
-            x:e.clientX,
-
-            y:e.clientY,
-
-            cx:
-              line.centerX ??
-              0.5,
-
-            cy:
-              line.centerY ??
-              0.5
-
-          };
-
-        }
-      );
-
-
-      c.addEventListener(
-        'pointermove',
-        e=>{
-
-          if(!dragging){
-            return;
-          }
-
-
-          const idx =
-            parseInt(
-              c.dataset.idx
-            );
-
-
-          const lineIndex =
-            parseInt(
-              c.dataset.line
-            );
-
-
-          const line =
-            slides[idx].lines[lineIndex];
-
-
-          const img =
-            imgCache[
-              line.frameDataURL
-            ];
-
-
-          if(!img){
-            return;
-          }
-
-
-          const rect =
-            c.getBoundingClientRect();
-
-
-          const {
-            sw,
-            sh
-          } =
-            getSourceExtent(
-              line,
-              img,
-              rect
-            );
-
-
-          const dxFrac =
-            (
-              e.clientX-start.x
-            ) /
-            rect.width;
-
-
-          const dyFrac =
-            (
-              e.clientY-start.y
-            ) /
-            rect.height;
-
-
-          line.centerX =
-            Math.max(
-              0,
-              Math.min(
-                1,
-                start.cx -
-                (
-                  dxFrac*sw /
-                  img.width
-                )
-              )
-            );
-
-
-          line.centerY =
-            Math.max(
-              0,
-              Math.min(
-                1,
-                start.cy -
-                (
-                  dyFrac*sh /
-                  img.height
-                )
-              )
-            );
-
-
-          paintThumb(
-            idx,
-            lineIndex
-          );
-
-
-          composeSlide(idx);
-
-        }
-      );
-
-
-      function endDrag(){
-
-        dragging=false;
-
-      }
-
-
-      c.addEventListener(
-        'pointerup',
-        endDrag
-      );
-
-
-      c.addEventListener(
-        'pointercancel',
-        endDrag
-      );
-
-
-      c.addEventListener(
-        'wheel',
-        e=>{
-
-          e.preventDefault();
-
-
-          const idx =
-            parseInt(
-              c.dataset.idx
-            );
-
-
-          const lineIndex =
-            parseInt(
-              c.dataset.line
-            );
-
-
-          const line =
-            slides[idx].lines[lineIndex];
-
-
-          const delta =
-            e.deltaY<0
-              ?0.1
-              :-0.1;
-
-
-          line.zoom =
-            Math.max(
-              1,
-              Math.min(
-                3,
-                (line.zoom||1.6)+delta
-              )
-            );
-
-
-          const slider =
-            document.querySelector(
-              `.zoomSlider[data-idx="${idx}"][data-line="${lineIndex}"]`
-            );
-
-
-          if(slider){
-
-            slider.value=
-              line.zoom;
-
-          }
-
-
-          paintThumb(
-            idx,
-            lineIndex
-          );
-
-
-          composeSlide(idx);
-
-        },
-        {
-          passive:false
-        }
-      );
-
-    });
-
-
-  // ==========================================================
-  // RESTORE EXISTING COMPOSITIONS
-  // ==========================================================
-
-  slides.forEach(
-    (slide,idx)=>{
-
-      if(slide.composedDataURL){
-
-        restoreComposedSlide(
-          idx,
-          slide.composedDataURL
-        );
-
-      }
-
-    }
-  );
-
-}
-
-
-// ============================================================
-// IMAGE DRAWING
-// ============================================================
+/* =========================================================
+   DRAW COVER
+========================================================= */
 
 function drawZoomedCover(
   ctx,
@@ -4048,30 +2123,31 @@ function drawZoomedCover(
   cy
 ){
 
-  const tr=w/h;
+  const tr =
+    w/h;
 
-  const ir=
-    img.width /
-    img.height;
-
+  const ir =
+    img.width/img.height;
 
   let baseW;
   let baseH;
 
 
-  if(ir>tr){
+  if(ir > tr){
 
-    baseH=img.height;
+    baseH =
+      img.height;
 
-    baseW=
-      baseH*tr;
+    baseW =
+      baseH * tr;
 
   }else{
 
-    baseW=img.width;
+    baseW =
+      img.width;
 
-    baseH=
-      baseW/tr;
+    baseH =
+      baseW / tr;
 
   }
 
@@ -4084,22 +2160,20 @@ function drawZoomedCover(
 
 
   const sw =
-    baseW/z;
-
+    baseW / z;
 
   const sh =
-    baseH/z;
+    baseH / z;
 
 
   let sx =
-    (cx??0.5)*
-    img.width -
+    (cx ?? .5) *
+      img.width -
     sw/2;
 
-
   let sy =
-    (cy??0.5)*
-    img.height -
+    (cy ?? .5) *
+      img.height -
     sh/2;
 
 
@@ -4138,81 +2212,33 @@ function drawZoomedCover(
 }
 
 
-// ============================================================
-// IMAGE CACHE
-// ============================================================
+/* =========================================================
+   THUMB PAINT
+========================================================= */
 
-function loadCachedImg(src){
+function paintThumb(idx,half){
 
-  if(imgCache[src]){
-
-    return Promise.resolve(
-      imgCache[src]
-    );
-
-  }
-
-
-  return new Promise(
-    resolve=>{
-
-      const im=new Image();
-
-
-      im.onload=()=>{
-
-        imgCache[src]=im;
-
-        resolve(im);
-
-      };
-
-
-      im.src=src;
-
-    }
-  );
-
-}
-
-
-// ============================================================
-// PAINT THUMB
-// ============================================================
-
-function paintThumb(
-  idx,
-  lineIndex
-){
-
-  const line =
-    slides[idx].lines[lineIndex];
-
+  const obj =
+    slides[idx][half];
 
   if(
-    !line ||
-    !line.frameDataURL
+    !obj ||
+    !obj.frameDataURL
   ){
-
     return;
-
   }
 
 
   const canvas =
     document.querySelector(
-      `.thumbCanvas[data-idx="${idx}"][data-line="${lineIndex}"]`
+      `.thumbCanvas[data-idx="${idx}"][data-half="${half}"]`
     );
 
-
-  if(!canvas){
-    return;
-  }
+  if(!canvas) return;
 
 
   const rect =
     canvas.getBoundingClientRect();
-
 
   const w =
     canvas.width =
@@ -4220,46 +2246,1428 @@ function paintThumb(
         rect.width
       ) || 400;
 
-
   const h =
     canvas.height =
       Math.round(
-        w*675/1080
+        w * 675/1080
       );
 
 
   loadCachedImg(
-    line.frameDataURL
-  ).then(
-    img=>{
+    obj.frameDataURL
+  ).then(img => {
 
-      const ctx =
-        canvas.getContext(
-          '2d'
-        );
+    const ctx =
+      canvas.getContext('2d');
+
+    ctx.clearRect(
+      0,
+      0,
+      w,
+      h
+    );
+
+    drawZoomedCover(
+      ctx,
+      img,
+      0,
+      0,
+      w,
+      h,
+      obj.zoom,
+      obj.centerX,
+      obj.centerY
+    );
+
+  });
+
+}
 
 
-      drawZoomedCover(
-        ctx,
-        img,
-        0,
-        0,
-        w,
-        h,
-        line.zoom,
-        line.centerX,
-        line.centerY
+/* =========================================================
+   CAPTION POSITION
+========================================================= */
+
+/*
+  For each dialogue we keep a textX/textY.
+
+  These are independent of the image.
+
+  The initial positions are automatically assigned
+  according to the number of horizontal sections.
+*/
+
+function getDefaultTextPosition(
+  count,
+  index
+){
+
+  if(count === 1){
+
+    return {
+      x:.5,
+      y:.5
+    };
+
+  }
+
+
+  if(count === 2){
+
+    return {
+      x:.5,
+      y:index === 0
+        ? .25
+        : .75
+    };
+
+  }
+
+
+  /* THREE HORIZONTAL SECTIONS */
+
+  return {
+    x:.5,
+    y:
+      index === 0
+        ? 1/6
+        : index === 1
+          ? .5
+          : 5/6
+  };
+
+}
+
+
+/* =========================================================
+   CAPTION EDITABLE POSITION
+========================================================= */
+
+function applyCaptionPosition(
+  el,
+  obj
+){
+
+  if(!obj) return;
+
+  el.style.left =
+    `${(obj.textX ?? .5) * 100}%`;
+
+  el.style.top =
+    `${(obj.textY ?? .5) * 100}%`;
+
+}
+
+
+/* =========================================================
+   SMOOTH TEXT DRAGGING
+========================================================= */
+
+function bindCaptionDrag(
+  el,
+  container
+){
+
+  const idx =
+    parseInt(
+      el.dataset.idx
+    );
+
+  const half =
+    el.dataset.half;
+
+
+  let pointerDown = false;
+
+  let dragging = false;
+
+  let moved = false;
+
+  let startX = 0;
+
+  let startY = 0;
+
+  let startTextX = 0;
+
+  let startTextY = 0;
+
+
+  /*
+    Pointer down does NOT move the image.
+
+    We only operate on the caption element.
+  */
+
+  el.addEventListener(
+    'pointerdown',
+    e => {
+
+      if(e.button !== 0){
+        return;
+      }
+
+
+      const obj =
+        slides[idx][half];
+
+      if(!obj) return;
+
+
+      pointerDown = true;
+
+      dragging = false;
+
+      moved = false;
+
+
+      startX =
+        e.clientX;
+
+      startY =
+        e.clientY;
+
+
+      startTextX =
+        obj.textX ?? .5;
+
+      startTextY =
+        obj.textY ?? .5;
+
+
+      el.setPointerCapture(
+        e.pointerId
       );
 
     }
   );
 
+
+  el.addEventListener(
+    'pointermove',
+    e => {
+
+      if(!pointerDown){
+        return;
+      }
+
+
+      const dx =
+        e.clientX - startX;
+
+      const dy =
+        e.clientY - startY;
+
+
+      /*
+        Small movement = normal text editing.
+
+        Once the pointer moves more than 3px,
+        it becomes a drag.
+      */
+
+      if(
+        !dragging &&
+        Math.sqrt(
+          dx*dx + dy*dy
+        ) > 3
+      ){
+
+        dragging = true;
+
+        moved = true;
+
+        el.classList.add(
+          'dragging'
+        );
+
+        /*
+          Stop the browser from selecting text.
+        */
+
+        window
+          .getSelection()
+          ?.removeAllRanges();
+
+      }
+
+
+      if(!dragging){
+        return;
+      }
+
+
+      const wrap =
+        container.querySelector(
+          `.slide-preview-wrap[data-idx="${idx}"]`
+        );
+
+
+      if(!wrap) return;
+
+
+      const rect =
+        wrap.getBoundingClientRect();
+
+
+      /*
+        Convert screen movement into
+        slide-relative movement.
+      */
+
+      const newX =
+        startTextX +
+        dx / rect.width;
+
+      const newY =
+        startTextY +
+        dy / rect.height;
+
+
+      /*
+        Keep the box inside the slide.
+
+        The text itself can move smoothly
+        up/down/left/right.
+      */
+
+      obj.textX =
+        Math.max(
+          .04,
+          Math.min(
+            .96,
+            newX
+          )
+        );
+
+
+      obj.textY =
+        Math.max(
+          .03,
+          Math.min(
+            .97,
+            newY
+          )
+        );
+
+
+      applyCaptionPosition(
+        el,
+        obj
+      );
+
+
+      /*
+        IMPORTANT:
+        Do NOT compose the image on every mouse move.
+
+        This keeps dragging extremely smooth.
+      */
+
+    }
+  );
+
+
+  function finishDrag(e){
+
+    if(!pointerDown){
+      return;
+    }
+
+
+    pointerDown = false;
+
+
+    if(dragging){
+
+      /*
+        Save the final position by composing
+        only once when the drag ends.
+      */
+
+      dragging = false;
+
+      el.classList.remove(
+        'dragging'
+      );
+
+
+      composeSlide(idx);
+
+    }
+
+  }
+
+
+  el.addEventListener(
+    'pointerup',
+    finishDrag
+  );
+
+
+  el.addEventListener(
+    'pointercancel',
+    finishDrag
+  );
+
+
+  /*
+    If it was just a click, the element
+    remains editable normally.
+  */
+
 }
 
 
-// ============================================================
-// TEXT WRAPPING
-// ============================================================
+/* =========================================================
+   CAPTION EDITING
+========================================================= */
+
+function bindCaptionEditable(
+  el,
+  container
+){
+
+  const idx =
+    parseInt(
+      el.dataset.idx
+    );
+
+  const half =
+    el.dataset.half;
+
+
+  let debounceTimer;
+
+
+  function syncFromEditable(){
+
+    const obj =
+      slides[idx][half];
+
+    if(!obj) return;
+
+
+    const text =
+      el.innerText
+        .replace(/\n+$/,'');
+
+
+    obj.text =
+      text;
+
+
+    const quoteEl =
+      container.querySelector(
+        `.half-capture[data-idx="${idx}"][data-half="${half}"] .line-text`
+      );
+
+
+    if(quoteEl){
+
+      quoteEl.textContent =
+        `"${text}"`;
+
+    }
+
+
+    composeSlide(idx);
+
+  }
+
+
+  el.addEventListener(
+    'input',
+    () => {
+
+      clearTimeout(
+        debounceTimer
+      );
+
+      debounceTimer =
+        setTimeout(
+          syncFromEditable,
+          250
+        );
+
+    }
+  );
+
+
+  el.addEventListener(
+    'focus',
+    () => {
+
+      el.style.color =
+        'rgba(255,255,255,.9)';
+
+    }
+  );
+
+
+  el.addEventListener(
+    'blur',
+    () => {
+
+      clearTimeout(
+        debounceTimer
+      );
+
+      el.style.color =
+        'transparent';
+
+      syncFromEditable();
+
+    }
+  );
+
+
+  /*
+    Dragging is separate from editing.
+  */
+
+  bindCaptionDrag(
+    el,
+    container
+  );
+
+}
+
+
+/* =========================================================
+   RENDER SLIDE CARDS
+========================================================= */
+
+function renderSlideCards(){
+
+  const container =
+    document.getElementById(
+      'slidesContainer'
+    );
+
+
+  /*
+    Before destroying the old DOM,
+    save all current caption positions.
+
+    This is important because renderSlideCards()
+    gets called after captures.
+  */
+
+  container
+    .querySelectorAll('.caption-editable')
+    .forEach(el => {
+
+      const idx =
+        parseInt(
+          el.dataset.idx
+        );
+
+      const half =
+        el.dataset.half;
+
+      const obj =
+        slides[idx]?.[half];
+
+      if(!obj) return;
+
+
+      /*
+        Read the existing position directly
+        from the model. It is already stored.
+      */
+
+      if(
+        obj.textX == null
+      ){
+        obj.textX = .5;
+      }
+
+      if(
+        obj.textY == null
+      ){
+        obj.textY = .5;
+      }
+
+    });
+
+
+  container.innerHTML = '';
+
+
+  slides.forEach(
+    (slide,idx) => {
+
+      const dialogueList =
+        [
+          slide.top,
+          slide.bottom,
+          slide.third
+        ].filter(Boolean);
+
+
+      const count =
+        dialogueList.length;
+
+
+      /*
+        Assign default positions only
+        when a position does not exist.
+      */
+
+      dialogueList.forEach(
+        (obj,i) => {
+
+          const pos =
+            getDefaultTextPosition(
+              count,
+              i
+            );
+
+
+          if(
+            obj.textX == null
+          ){
+            obj.textX =
+              pos.x;
+          }
+
+
+          if(
+            obj.textY == null
+          ){
+            obj.textY =
+              pos.y;
+          }
+
+        }
+      );
+
+
+      const card =
+        document.createElement(
+          'div'
+        );
+
+
+      card.className =
+        'slide-card';
+
+
+      /*
+        CAPTURE COLUMNS
+      */
+
+      let captureHTML = '';
+
+
+      dialogueList.forEach(
+        (obj,i) => {
+
+          const half =
+            i === 0
+              ? 'top'
+              : i === 1
+                ? 'bottom'
+                : 'third';
+
+
+          const label =
+            count === 3
+              ? (
+                i === 0
+                  ? 'Top'
+                  : i === 1
+                    ? 'Middle'
+                    : 'Bottom'
+              )
+              : (
+                i === 0
+                  ? 'Top'
+                  : 'Bottom'
+              );
+
+
+          captureHTML += `
+
+            <div
+              class="half-capture"
+              data-idx="${idx}"
+              data-half="${half}"
+            >
+
+              <h4>
+                <span class="slide-num">
+                  ${idx+1}
+                </span>
+                — ${label} —
+                ${escapeHTML(obj.speaker)}
+              </h4>
+
+
+              <div class="line-text">
+                "${escapeHTML(obj.text)}"
+              </div>
+
+
+              ${
+                obj.frameDataURL
+
+                ? `
+
+                  <canvas
+                    class="thumb thumbCanvas"
+                    data-idx="${idx}"
+                    data-half="${half}"
+                  ></canvas>
+
+
+                  <div class="zoom-row">
+
+                    <span class="hint">
+                      Zoom
+                    </span>
+
+                    <input
+                      type="range"
+                      class="zoomSlider"
+                      data-idx="${idx}"
+                      data-half="${half}"
+                      min="1"
+                      max="3"
+                      step=".05"
+                      value="${obj.zoom}"
+                    >
+
+                  </div>
+
+
+                  <div class="hint">
+                    Drag image to reposition · scroll to zoom
+                  </div>
+
+                `
+
+                : `
+
+                  <div class="thumb empty">
+                    No frame captured yet
+                  </div>
+
+                `
+              }
+
+
+              <div class="copy-row">
+
+                <select
+                  class="copySourceSelect"
+                  data-idx="${idx}"
+                  data-half="${half}"
+                >
+
+                  <option value="">
+                    Duplicate from…
+                  </option>
+
+                  ${buildCopyOptions(
+                    idx,
+                    half
+                  )}
+
+                </select>
+
+
+                <button
+                  class="copyBtn"
+                  data-idx="${idx}"
+                  data-half="${half}"
+                >
+                  Copy
+                </button>
+
+              </div>
+
+
+              <button
+                class="captureBtn"
+                data-idx="${idx}"
+                data-half="${half}"
+              >
+                Capture frame at ${fmtTime(vp.currentTime)}
+              </button>
+
+            </div>
+
+          `;
+
+        }
+      );
+
+
+      /*
+        PREVIEW CAPTION HTML
+      */
+
+      let captionHTML = '';
+
+
+      dialogueList.forEach(
+        (obj,i) => {
+
+          const half =
+            i === 0
+              ? 'top'
+              : i === 1
+                ? 'bottom'
+                : 'third';
+
+
+          captionHTML += `
+
+            <div
+              class="caption-editable"
+              data-idx="${idx}"
+              data-half="${half}"
+              contenteditable="true"
+              spellcheck="false"
+            >${escapeHTML(obj.text)}</div>
+
+          `;
+
+        }
+      );
+
+
+      card.innerHTML = `
+
+        ${captureHTML}
+
+
+        <div class="slide-preview">
+
+          <div
+            class="slide-preview-wrap"
+            data-idx="${idx}"
+          >
+
+            <canvas
+              class="slideCanvas"
+              data-idx="${idx}"
+              width="1080"
+              height="1350"
+            ></canvas>
+
+            ${captionHTML}
+
+          </div>
+
+
+          <div class="edit-hint">
+            Drag the text itself to move it smoothly.
+            Click inside the text to edit.
+          </div>
+
+
+          <button
+            class="composeBtn"
+            data-idx="${idx}"
+          >
+            Compose slide
+          </button>
+
+        </div>
+
+      `;
+
+
+      container.appendChild(card);
+
+    }
+  );
+
+
+  /* =====================================================
+     BIND CAPTION ELEMENTS
+  ===================================================== */
+
+  container
+    .querySelectorAll(
+      '.caption-editable'
+    )
+    .forEach(el => {
+
+      const idx =
+        parseInt(
+          el.dataset.idx
+        );
+
+      const half =
+        el.dataset.half;
+
+      const obj =
+        slides[idx][half];
+
+
+      applyCaptionPosition(
+        el,
+        obj
+      );
+
+
+      bindCaptionEditable(
+        el,
+        container
+      );
+
+    });
+
+
+  /* =====================================================
+     COPY BUTTONS
+  ===================================================== */
+
+  container
+    .querySelectorAll(
+      '.copyBtn'
+    )
+    .forEach(btn => {
+
+      btn.addEventListener(
+        'click',
+        () => {
+
+          const idx =
+            parseInt(
+              btn.dataset.idx
+            );
+
+          const half =
+            btn.dataset.half;
+
+
+          const select =
+            container.querySelector(
+              `.copySourceSelect[data-idx="${idx}"][data-half="${half}"]`
+            );
+
+
+          const val =
+            select.value;
+
+          if(!val) return;
+
+
+          const [
+            srcIdxStr,
+            srcHalf
+          ] =
+            val.split('|');
+
+
+          const src =
+            slides[
+              parseInt(srcIdxStr)
+            ][srcHalf];
+
+
+          if(!src) return;
+
+
+          /*
+            Copy image positioning,
+            but DO NOT copy text position.
+          */
+
+          slides[idx][half] = {
+
+            ...slides[idx][half],
+
+            frameDataURL:
+              src.frameDataURL,
+
+            zoom:
+              src.zoom,
+
+            centerX:
+              src.centerX,
+
+            centerY:
+              src.centerY
+
+          };
+
+
+          /*
+            Do not wipe the entire slide.
+          */
+
+          renderSlideCards();
+
+        }
+      );
+
+    });
+
+
+  /* =====================================================
+     CAPTURE BUTTONS
+  ===================================================== */
+
+  container
+    .querySelectorAll(
+      '.captureBtn'
+    )
+    .forEach(btn => {
+
+      btn.addEventListener(
+        'click',
+        () => {
+
+          const idx =
+            parseInt(
+              btn.dataset.idx
+            );
+
+          const half =
+            btn.dataset.half;
+
+
+          const obj =
+            slides[idx][half];
+
+
+          if(!obj) return;
+
+
+          const dataURL =
+            captureCurrentFrame();
+
+
+          obj.frameDataURL =
+            dataURL;
+
+
+          obj.zoom =
+            obj.zoom || 1.6;
+
+
+          obj.centerX =
+            obj.centerX ?? .5;
+
+
+          obj.centerY =
+            obj.centerY ?? .35;
+
+
+          /*
+            IMPORTANT:
+            textX/textY are NOT touched.
+
+            The existing composed slide state
+            is also NOT touched here.
+          */
+
+          renderSlideCards();
+
+        }
+      );
+
+    });
+
+
+  /* =====================================================
+     COMPOSE BUTTONS
+  ===================================================== */
+
+  container
+    .querySelectorAll(
+      '.composeBtn'
+    )
+    .forEach(btn => {
+
+      btn.addEventListener(
+        'click',
+        () => {
+
+          const idx =
+            parseInt(
+              btn.dataset.idx
+            );
+
+          composeSlide(idx);
+
+        }
+      );
+
+    });
+
+
+  /* =====================================================
+     THUMBNAILS
+  ===================================================== */
+
+  container
+    .querySelectorAll(
+      '.thumbCanvas'
+    )
+    .forEach(c => {
+
+      paintThumb(
+        parseInt(c.dataset.idx),
+        c.dataset.half
+      );
+
+    });
+
+
+  /* =====================================================
+     ZOOM SLIDERS
+  ===================================================== */
+
+  container
+    .querySelectorAll(
+      '.zoomSlider'
+    )
+    .forEach(sl => {
+
+      sl.addEventListener(
+        'input',
+        () => {
+
+          const idx =
+            parseInt(
+              sl.dataset.idx
+            );
+
+          const half =
+            sl.dataset.half;
+
+
+          slides[idx][half].zoom =
+            parseFloat(
+              sl.value
+            );
+
+
+          paintThumb(
+            idx,
+            half
+          );
+
+        }
+      );
+
+    });
+
+
+  /* =====================================================
+     IMAGE PAN / ZOOM
+  ===================================================== */
+
+  container
+    .querySelectorAll(
+      '.thumbCanvas'
+    )
+    .forEach(c => {
+
+      let dragging = false;
+
+      let start = null;
+
+
+      function getSourceExtent(
+        s,
+        img,
+        rect
+      ){
+
+        const tr =
+          rect.width /
+          rect.height;
+
+        const ir =
+          img.width /
+          img.height;
+
+        let baseW;
+        let baseH;
+
+
+        if(ir > tr){
+
+          baseH =
+            img.height;
+
+          baseW =
+            baseH * tr;
+
+        }else{
+
+          baseW =
+            img.width;
+
+          baseH =
+            baseW / tr;
+
+        }
+
+
+        return {
+
+          sw:
+            baseW /
+            s.zoom,
+
+          sh:
+            baseH /
+            s.zoom
+
+        };
+
+      }
+
+
+      c.style.cursor =
+        'grab';
+
+
+      c.addEventListener(
+        'pointerdown',
+        e => {
+
+          const idx =
+            parseInt(
+              c.dataset.idx
+            );
+
+          const half =
+            c.dataset.half;
+
+
+          const s =
+            slides[idx][half];
+
+
+          dragging = true;
+
+
+          c.setPointerCapture(
+            e.pointerId
+          );
+
+
+          c.style.cursor =
+            'grabbing';
+
+
+          start = {
+
+            x:e.clientX,
+
+            y:e.clientY,
+
+            cx:
+              s.centerX ??
+              .5,
+
+            cy:
+              s.centerY ??
+              .5
+
+          };
+
+        }
+      );
+
+
+      c.addEventListener(
+        'pointermove',
+        e => {
+
+          if(!dragging) return;
+
+
+          const idx =
+            parseInt(
+              c.dataset.idx
+            );
+
+          const half =
+            c.dataset.half;
+
+
+          const s =
+            slides[idx][half];
+
+
+          const img =
+            imgCache[
+              s.frameDataURL
+            ];
+
+
+          if(!img) return;
+
+
+          const rect =
+            c.getBoundingClientRect();
+
+
+          const {
+            sw,
+            sh
+          } =
+            getSourceExtent(
+              s,
+              img,
+              rect
+            );
+
+
+          const dxFrac =
+            (
+              e.clientX -
+              start.x
+            ) /
+            rect.width;
+
+
+          const dyFrac =
+            (
+              e.clientY -
+              start.y
+            ) /
+            rect.height;
+
+
+          s.centerX =
+            Math.max(
+              0,
+              Math.min(
+                1,
+                start.cx -
+                (
+                  dxFrac *
+                  sw /
+                  img.width
+                )
+              )
+            );
+
+
+          s.centerY =
+            Math.max(
+              0,
+              Math.min(
+                1,
+                start.cy -
+                (
+                  dyFrac *
+                  sh /
+                  img.height
+                )
+              )
+            );
+
+
+          paintThumb(
+            idx,
+            half
+          );
+
+        }
+      );
+
+
+      function endDrag(){
+
+        dragging = false;
+
+        c.style.cursor =
+          'grab';
+
+      }
+
+
+      c.addEventListener(
+        'pointerup',
+        endDrag
+      );
+
+      c.addEventListener(
+        'pointercancel',
+        endDrag
+      );
+
+
+      c.addEventListener(
+        'wheel',
+        e => {
+
+          e.preventDefault();
+
+
+          const idx =
+            parseInt(
+              c.dataset.idx
+            );
+
+          const half =
+            c.dataset.half;
+
+
+          const s =
+            slides[idx][half];
+
+
+          const delta =
+            e.deltaY < 0
+              ? .1
+              : -.1;
+
+
+          s.zoom =
+            Math.max(
+              1,
+              Math.min(
+                3,
+                (s.zoom || 1.6) +
+                delta
+              )
+            );
+
+
+          const slider =
+            document.querySelector(
+              `.zoomSlider[data-idx="${idx}"][data-half="${half}"]`
+            );
+
+
+          if(slider){
+            slider.value =
+              s.zoom;
+          }
+
+
+          paintThumb(
+            idx,
+            half
+          );
+
+        },
+        {
+          passive:false
+        }
+      );
+
+    });
+
+}
+
+
+/* =========================================================
+   DRAW CAPTION
+========================================================= */
 
 function wrapLines(
   ctx,
@@ -4270,44 +3678,41 @@ function wrapLines(
   const manualLines =
     text.split('\n');
 
-
-  const lines=[];
+  const lines = [];
 
 
   manualLines.forEach(
-    manualLine=>{
+    manualLine => {
 
       const words =
         manualLine.split(' ');
 
+      let cur = '';
 
-      let cur='';
 
-
-      for(
-        const w of words
-      ){
+      for(const w of words){
 
         const test =
           cur
-            ?cur+' '+w
-            :w;
+            ? cur + ' ' + w
+            : w;
 
 
         if(
-          ctx.measureText(test)
-            .width >
-          maxWidth &&
+          ctx.measureText(
+            test
+          ).width >
+            maxWidth &&
           cur
         ){
 
           lines.push(cur);
 
-          cur=w;
+          cur = w;
 
         }else{
 
-          cur=test;
+          cur = test;
 
         }
 
@@ -4325,15 +3730,19 @@ function wrapLines(
 }
 
 
-// ============================================================
-// DRAW CAPTION
-// ============================================================
+/*
+  Draw caption around a CENTER POINT.
 
-function drawCaption(
+  This allows the text itself to move
+  freely instead of being locked to a
+  bottom position.
+*/
+
+function drawCaptionAt(
   ctx,
   text,
-  cx,
-  bottomY,
+  x,
+  y,
   maxWidth,
   style
 ){
@@ -4342,9 +3751,14 @@ function drawCaption(
     `italic bold ${style.fontSize}px "${style.fontFamily}", Arial, sans-serif`;
 
 
-  ctx.font=font;
+  ctx.font =
+    font;
 
-  ctx.textAlign='center';
+  ctx.textAlign =
+    'center';
+
+  ctx.textBaseline =
+    'middle';
 
 
   const lines =
@@ -4356,41 +3770,45 @@ function drawCaption(
 
 
   const lineHeight =
-    style.fontSize*1.25;
+    style.fontSize *
+    1.25;
 
 
-  const startY =
-    bottomY -
-    (
-      lines.length-1
-    )*
+  const totalHeight =
+    lines.length *
     lineHeight;
 
 
-  lines.forEach(
-    (line,i)=>{
+  const startY =
+    y -
+    totalHeight/2 +
+    lineHeight/2;
 
-      const y =
+
+  lines.forEach(
+    (line,i) => {
+
+      const lineY =
         startY +
-        i*lineHeight;
+        i *
+        lineHeight;
 
 
       ctx.save();
 
 
-      if(style.dropAmount>0){
+      if(
+        style.dropAmount > 0
+      ){
 
         ctx.shadowColor =
           style.shadowColor;
 
-
         ctx.shadowOffsetX =
           style.dropAmount;
 
-
         ctx.shadowOffsetY =
           style.dropAmount;
-
 
         ctx.shadowBlur =
           style.dropAmount;
@@ -4404,8 +3822,8 @@ function drawCaption(
 
       ctx.fillText(
         line,
-        cx,
-        y
+        x,
+        lineY
       );
 
 
@@ -4414,47 +3832,23 @@ function drawCaption(
     }
   );
 
+
+  ctx.textBaseline =
+    'alphabetic';
+
 }
 
 
-// ============================================================
-// COMPOSE SLIDE
-// ============================================================
+/* =========================================================
+   COMPOSE SLIDE
+========================================================= */
 
-function composeSlide(idx){
+async function composeSlide(idx){
 
   const slide =
     slides[idx];
 
-
-  if(!slide){
-    return;
-  }
-
-
-  /*
-    Backward compatibility.
-  */
-
-  if(!Array.isArray(slide.lines)){
-
-    slide.lines=[];
-
-
-    if(slide.top){
-      slide.lines.push(
-        slide.top
-      );
-    }
-
-
-    if(slide.bottom){
-      slide.lines.push(
-        slide.bottom
-      );
-    }
-
-  }
+  if(!slide) return;
 
 
   const canvas =
@@ -4463,29 +3857,18 @@ function composeSlide(idx){
     );
 
 
-  if(!canvas){
-    return;
-  }
+  if(!canvas) return;
 
 
   const ctx =
     canvas.getContext('2d');
 
 
-  const W=canvas.width;
+  const W =
+    canvas.width;
 
-  const H=canvas.height;
-
-
-  const total =
-    Math.max(
-      1,
-      slide.lines.length
-    );
-
-
-  const sectionH =
-    H/total;
+  const H =
+    canvas.height;
 
 
   const style =
@@ -4500,282 +3883,194 @@ function composeSlide(idx){
   );
 
 
-  function loadImg(src){
-
-    return new Promise(
-      resolve=>{
-
-        const im=new Image();
-
-
-        im.onload=()=>{
-          resolve(im);
-        };
+  const sections =
+    [
+      slide.top,
+      slide.bottom,
+      slide.third
+    ].filter(Boolean);
 
 
-        im.onerror=()=>{
-          resolve(null);
-        };
+  const sectionCount =
+    sections.length;
 
 
-        im.src=src;
+  /*
+    1 dialogue:
+    entire slide
 
+    2 dialogues:
+    2 horizontal sections
+
+    3 dialogues:
+    3 horizontal sections
+  */
+
+
+  const sectionHeight =
+    H / sectionCount;
+
+
+  /*
+    Load all images without destroying
+    other slides' state.
+  */
+
+  const imagePromises =
+    sections.map(obj => {
+
+      if(!obj.frameDataURL){
+        return Promise.resolve(null);
       }
+
+      return loadCachedImg(
+        obj.frameDataURL
+      );
+
+    });
+
+
+  const images =
+    await Promise.all(
+      imagePromises
     );
 
-  }
+
+  /*
+    Draw every section.
+  */
+
+  sections.forEach(
+    (obj,i) => {
+
+      const y =
+        i *
+        sectionHeight;
 
 
-  Promise.all(
-    slide.lines.map(
-      line=>
-        line.frameDataURL
-          ?loadImg(
-              line.frameDataURL
-            )
-          :Promise.resolve(null)
-    )
-  ).then(
-    images=>{
-
-      /*
-        ======================================================
-        HORIZONTAL SECTIONS
-        ======================================================
-
-        1 dialogue:
-        ┌──────────────┐
-        │              │
-        │    IMAGE     │
-        │              │
-        └──────────────┘
-
-        2 dialogues:
-        ┌──────────────┐
-        │     TOP      │
-        ├──────────────┤
-        │    BOTTOM    │
-        └──────────────┘
-
-        3 dialogues:
-        ┌──────────────┐
-        │     TOP      │
-        ├──────────────┤
-        │    MIDDLE    │
-        ├──────────────┤
-        │    BOTTOM    │
-        └──────────────┘
-      */
+      const img =
+        images[i];
 
 
-      slide.lines.forEach(
-        (line,lineIndex)=>{
+      if(img){
 
-          const y =
-            lineIndex*
-            sectionH;
-
-
-          if(images[lineIndex]){
-
-            drawZoomedCover(
-              ctx,
-              images[lineIndex],
-              0,
-              y,
-              W,
-              sectionH,
-              line.zoom,
-              line.centerX,
-              line.centerY
-            );
-
-          }else{
-
-            ctx.fillStyle='#000';
-
-
-            ctx.fillRect(
-              0,
-              y,
-              W,
-              sectionH
-            );
-
-          }
-
-
-          /*
-            Divider.
-          */
-
-          if(lineIndex>0){
-
-            ctx.fillStyle =
-              'rgba(255,255,255,.15)';
-
-
-            ctx.fillRect(
-              0,
-              y-1,
-              W,
-              2
-            );
-
-          }
-
-        }
-      );
-
-
-      /*
-        ======================================================
-        CAPTIONS
-        ======================================================
-
-        captionX controls horizontal position.
-
-        captionY controls vertical position.
-
-        These values are saved on the slide.
-      */
-
-      slide.lines.forEach(
-        (line,lineIndex)=>{
-
-          if(line.captionX==null){
-
-            line.captionX=0.5;
-
-          }
-
-
-          if(line.captionY==null){
-
-            line.captionY =
-              getCaptionDefaultY(
-                lineIndex,
-                total
-              );
-
-          }
-
-
-          const x =
-            line.captionX*
-            W;
-
-
-          const y =
-            line.captionY*
-            H;
-
-
-          drawCaption(
-            ctx,
-            line.text,
-            x,
-            y,
-            W-120,
-            style
-          );
-
-        }
-      );
-
-
-      /*
-        IMPORTANT:
-
-        Only THIS slide's composition is updated.
-
-        Other slides' composedDataURL values are untouched.
-      */
-
-      slide.composedDataURL =
-        canvas.toDataURL(
-          'image/png'
+        drawZoomedCover(
+          ctx,
+          img,
+          0,
+          y,
+          W,
+          sectionHeight,
+          obj.zoom,
+          obj.centerX,
+          obj.centerY
         );
+
+      }else{
+
+        ctx.fillStyle =
+          '#000';
+
+        ctx.fillRect(
+          0,
+          y,
+          W,
+          sectionHeight
+        );
+
+      }
 
     }
   );
 
-}
+
+  /*
+    Divider lines.
+  */
+
+  if(sectionCount > 1){
+
+    ctx.fillStyle =
+      'rgba(255,255,255,.15)';
 
 
-// ============================================================
-// RESTORE COMPOSED SLIDE
-// ============================================================
+    for(
+      let i=1;
+      i<sectionCount;
+      i++
+    ){
 
-function restoreComposedSlide(
-  idx,
-  dataURL
-){
-
-  const canvas =
-    document.querySelector(
-      `.slideCanvas[data-idx="${idx}"]`
-    );
+      const y =
+        i *
+        sectionHeight;
 
 
-  if(
-    !canvas ||
-    !dataURL
-  ){
+      ctx.fillRect(
+        0,
+        y-1,
+        W,
+        2
+      );
 
-    return;
+    }
 
   }
 
 
-  const ctx =
-    canvas.getContext('2d');
+  /*
+    Draw captions at their own
+    independent x/y positions.
+  */
+
+  sections.forEach(
+    obj => {
+
+      drawCaptionAt(
+        ctx,
+        obj.text,
+        W * (obj.textX ?? .5),
+        H * (obj.textY ?? .5),
+        W - 120,
+        style
+      );
+
+    }
+  );
 
 
-  const img=new Image();
+  /*
+    Store composed image.
 
+    This does NOT modify any other slide.
+  */
 
-  img.onload=()=>{
-
-    ctx.clearRect(
-      0,
-      0,
-      canvas.width,
-      canvas.height
+  slide.composedDataURL =
+    canvas.toDataURL(
+      'image/png'
     );
 
 
-    ctx.drawImage(
-      img,
-      0,
-      0,
-      canvas.width,
-      canvas.height
-    );
-
-  };
-
-
-  img.src=dataURL;
+  /*
+    Update only this slide's visible
+    preview, not the entire capture UI.
+  */
 
 }
 
 
-// ============================================================
-// LIGHTBOX
-// ============================================================
+/* =========================================================
+   LIGHTBOX
+========================================================= */
 
 const lightboxOverlay =
   document.getElementById(
     'lightboxOverlay'
   );
 
-
 const lightboxImg =
   document.getElementById(
     'lightboxImg'
   );
-
 
 const lightboxCaption =
   document.getElementById(
@@ -4788,7 +4083,8 @@ function openLightbox(
   caption
 ){
 
-  lightboxImg.src=src;
+  lightboxImg.src =
+    src;
 
   lightboxCaption.textContent =
     caption || '';
@@ -4806,7 +4102,8 @@ function closeLightbox(){
     'open'
   );
 
-  lightboxImg.src='';
+  lightboxImg.src =
+    '';
 
 }
 
@@ -4823,10 +4120,10 @@ document
 
 lightboxOverlay.addEventListener(
   'click',
-  e=>{
+  e => {
 
     if(
-      e.target===
+      e.target ===
       lightboxOverlay
     ){
 
@@ -4840,13 +4137,11 @@ lightboxOverlay.addEventListener(
 
 document.addEventListener(
   'keydown',
-  e=>{
+  e => {
 
     if(
-      e.key==='Escape' &&
-      lightboxOverlay.classList.contains(
-        'open'
-      )
+      e.key === 'Escape' &&
+      lightboxOverlay.classList.contains('open')
     ){
 
       closeLightbox();
@@ -4857,9 +4152,9 @@ document.addEventListener(
 );
 
 
-// ============================================================
-// PROJECT STORAGE
-// ============================================================
+/* =========================================================
+   PROJECT STORAGE
+========================================================= */
 
 async function pushProjectToHistory(
   title,
@@ -4871,8 +4166,8 @@ async function pushProjectToHistory(
     const finalTitle =
       title &&
       title.trim()
-        ?title.trim()
-        :'Untitled project';
+        ? title.trim()
+        : 'Untitled project';
 
 
     const savedAt =
@@ -4880,9 +4175,9 @@ async function pushProjectToHistory(
 
 
     const id =
-      'project:'+
-      Date.now()+
-      '_'+
+      'project:' +
+      Date.now() +
+      '_' +
       Math.random()
         .toString(36)
         .slice(2,8);
@@ -4911,16 +4206,13 @@ async function pushProjectToHistory(
   }catch(e){
 
     console.warn(
-      'Could not save project locally:',
+      'Could not save project:',
       e
     );
 
-
     alert(
-      'Could not save this project to Projects. '+
-      'The download itself still worked.'
+      'Could not save this project to Projects. The download still worked.'
     );
-
 
     return false;
 
@@ -4938,22 +4230,17 @@ async function getProjects(){
 
 
   return rows
-    .map(
-      r=>({
 
-        projectId:r.key,
+    .map(r => ({
+      projectId:r.key,
+      title:r.value.title,
+      savedAt:r.value.savedAt,
+      slides:r.value.slides || []
+    }))
 
-        title:r.value.title,
-
-        savedAt:r.value.savedAt,
-
-        slides:r.value.slides || []
-
-      })
-    )
     .sort(
-      (a,b)=>
-        new Date(b.savedAt)-
+      (a,b) =>
+        new Date(b.savedAt) -
         new Date(a.savedAt)
     );
 
@@ -4992,9 +4279,9 @@ async function clearHistory(){
 }
 
 
-// ============================================================
-// PROJECT GALLERY
-// ============================================================
+/* =========================================================
+   HISTORY GALLERY
+========================================================= */
 
 async function renderHistoryGallery(){
 
@@ -5014,27 +4301,26 @@ async function renderHistoryGallery(){
 
   }catch(e){
 
-    gallery.innerHTML = `
-      <p style="color:var(--tally);font-size:13px;">
+    gallery.innerHTML =
+      `<p style="color:var(--tally);font-size:13px;">
         Couldn't load projects.
-      </p>
-    `;
+      </p>`;
 
     return;
 
   }
 
 
-  gallery.innerHTML='';
+  gallery.innerHTML =
+    '';
 
 
-  if(projects.length===0){
+  if(projects.length === 0){
 
-    gallery.innerHTML = `
-      <p style="color:var(--muted);font-size:13px;">
+    gallery.innerHTML =
+      `<p style="color:var(--muted);font-size:13px;">
         No previous projects yet.
-      </p>
-    `;
+      </p>`;
 
     return;
 
@@ -5042,7 +4328,7 @@ async function renderHistoryGallery(){
 
 
   projects.forEach(
-    proj=>{
+    proj => {
 
       const card =
         document.createElement(
@@ -5050,7 +4336,7 @@ async function renderHistoryGallery(){
         );
 
 
-      card.className=
+      card.className =
         'project-card';
 
 
@@ -5068,12 +4354,11 @@ async function renderHistoryGallery(){
             ${escapeHTML(proj.title)}
           </h3>
 
-
           <div class="meta">
 
             <span class="count">
               ${proj.slides.length}
-              slide${proj.slides.length===1?'':'s'}
+              slide${proj.slides.length === 1 ? '' : 's'}
             </span>
 
             · ${when}
@@ -5115,30 +4400,18 @@ async function renderHistoryGallery(){
 
 
       proj.slides.forEach(
-        (slide,i)=>{
-
-          /*
-            Backward compatibility.
-          */
-
-          const lines =
-            slide.lines ||
-            [
-              ...(slide.top
-                ?[slide.top]
-                :[]),
-
-              ...(slide.bottom
-                ?[slide.bottom]
-                :[])
-            ];
-
+        (slide,i) => {
 
           const label =
-            `${i+1} — `+
-            lines
-              .map(l=>l.speaker)
-              .join(' + ');
+            `${i+1} — ${slide.top.speaker}${
+              slide.bottom
+                ? ' + ' + slide.bottom.speaker
+                : ''
+            }${
+              slide.third
+                ? ' + ' + slide.third.speaker
+                : ''
+            }`;
 
 
           const fig =
@@ -5150,7 +4423,7 @@ async function renderHistoryGallery(){
           fig.innerHTML = `
 
             <img
-              src="${slide.composedDataURL || ''}"
+              src="${slide.composedDataURL}"
               alt="${escapeHTML(label)}"
             >
 
@@ -5161,17 +4434,11 @@ async function renderHistoryGallery(){
           `;
 
 
-          const img =
-            fig.querySelector(
-              'img'
-            );
-
-
-          if(slide.composedDataURL){
-
-            img.addEventListener(
+          fig
+            .querySelector('img')
+            .addEventListener(
               'click',
-              ()=>{
+              () => {
 
                 openLightbox(
                   slide.composedDataURL,
@@ -5181,8 +4448,6 @@ async function renderHistoryGallery(){
               }
             );
 
-          }
-
 
           const dlBtn =
             document.createElement(
@@ -5190,30 +4455,21 @@ async function renderHistoryGallery(){
             );
 
 
-          dlBtn.textContent=
+          dlBtn.textContent =
             'Download PNG';
 
 
-          dlBtn.style.width=
+          dlBtn.style.width =
             '100%';
 
 
-          dlBtn.style.marginTop=
+          dlBtn.style.marginTop =
             '6px';
 
 
           dlBtn.addEventListener(
             'click',
-            ()=>{
-
-              if(
-                !slide.composedDataURL
-              ){
-
-                return;
-
-              }
-
+            () => {
 
               const a =
                 document.createElement(
@@ -5259,31 +4515,29 @@ async function renderHistoryGallery(){
   );
 
 
-  // ==========================================================
-  // EDIT PROJECT
-  // ==========================================================
+  /*
+    EDIT PROJECT
+  */
 
   gallery
     .querySelectorAll(
       '.editProjectBtn'
     )
-    .forEach(btn=>{
+    .forEach(btn => {
 
       btn.addEventListener(
         'click',
-        async()=>{
+        async () => {
 
           const proj =
             projects.find(
-              p=>
-                p.projectId===
+              p =>
+                p.projectId ===
                 btn.dataset.id
             );
 
 
-          if(!proj){
-            return;
-          }
+          if(!proj) return;
 
 
           slides =
@@ -5294,61 +4548,12 @@ async function renderHistoryGallery(){
             );
 
 
-          /*
-            Convert older projects into
-            the new lines structure.
-          */
-
-          slides =
-            slides.map(
-              slide=>{
-
-                if(
-                  Array.isArray(
-                    slide.lines
-                  )
-                ){
-
-                  return slide;
-
-                }
-
-
-                const lines=[];
-
-
-                if(slide.top){
-                  lines.push(
-                    slide.top
-                  );
-                }
-
-
-                if(slide.bottom){
-                  lines.push(
-                    slide.bottom
-                  );
-                }
-
-
-                return {
-
-                  lines,
-
-                  composedDataURL:
-                    slide.composedDataURL ||
-                    null
-
-                };
-
-              }
-            );
-
-
-          document.getElementById(
-            'projectTitleInput'
-          ).value =
-            proj.title;
+          document
+            .getElementById(
+              'projectTitleInput'
+            )
+            .value =
+              proj.title;
 
 
           goToStep(4);
@@ -5359,30 +4564,29 @@ async function renderHistoryGallery(){
     });
 
 
-  // ==========================================================
-  // DELETE
-  // ==========================================================
+  /*
+    DELETE PROJECT
+  */
 
   gallery
     .querySelectorAll(
       '.deleteProjectBtn'
     )
-    .forEach(btn=>{
+    .forEach(btn => {
 
       btn.addEventListener(
         'click',
-        async()=>{
+        async () => {
 
           if(
             confirm(
-              "Delete this project? This can't be undone."
+              'Delete this project? This can\'t be undone.'
             )
           ){
 
             await deleteProject(
               btn.dataset.id
             );
-
 
             renderHistoryGallery();
 
@@ -5396,9 +4600,9 @@ async function renderHistoryGallery(){
 }
 
 
-// ============================================================
-// CLEAR PROJECT HISTORY
-// ============================================================
+/* =========================================================
+   CLEAR HISTORY
+========================================================= */
 
 document
   .getElementById(
@@ -5406,11 +4610,11 @@ document
   )
   .addEventListener(
     'click',
-    async()=>{
+    async () => {
 
       if(
         confirm(
-          "Clear ALL projects on this device? This can't be undone."
+          'Clear ALL projects on this device? This can\'t be undone.'
         )
       ){
 
@@ -5424,9 +4628,9 @@ document
   );
 
 
-// ============================================================
-// EXPORT GALLERY
-// ============================================================
+/* =========================================================
+   EXPORT GALLERY
+========================================================= */
 
 function renderExportGallery(){
 
@@ -5436,13 +4640,16 @@ function renderExportGallery(){
     );
 
 
-  gallery.innerHTML='';
+  gallery.innerHTML =
+    '';
 
 
   slides.forEach(
-    (slide,idx)=>{
+    (slide,idx) => {
 
-      if(!slide.composedDataURL){
+      if(
+        !slide.composedDataURL
+      ){
         return;
       }
 
@@ -5454,21 +4661,28 @@ function renderExportGallery(){
 
 
       const fname =
-        `slide_${String(idx+1).padStart(2,'0')}.png`;
+        `slide_${String(
+          idx+1
+        ).padStart(2,'0')}.png`;
 
 
       const label =
-        `${idx+1} — `+
-        slide.lines
-          .map(l=>l.speaker)
-          .join(' + ');
+        `${idx+1} — ${slide.top.speaker}${
+          slide.bottom
+            ? ' + ' + slide.bottom.speaker
+            : ''
+        }${
+          slide.third
+            ? ' + ' + slide.third.speaker
+            : ''
+        }`;
 
 
       fig.innerHTML = `
 
         <img
           src="${slide.composedDataURL}"
-          alt="${escapeHTML(label)}"
+          alt=""
         >
 
         <figcaption>
@@ -5482,7 +4696,7 @@ function renderExportGallery(){
         .querySelector('img')
         .addEventListener(
           'click',
-          ()=>{
+          () => {
 
             openLightbox(
               slide.composedDataURL,
@@ -5499,21 +4713,21 @@ function renderExportGallery(){
         );
 
 
-      dlBtn.textContent=
+      dlBtn.textContent =
         'Download PNG';
 
 
-      dlBtn.style.width=
+      dlBtn.style.width =
         '100%';
 
 
-      dlBtn.style.marginTop=
+      dlBtn.style.marginTop =
         '6px';
 
 
       dlBtn.addEventListener(
         'click',
-        ()=>{
+        () => {
 
           const a =
             document.createElement(
@@ -5525,7 +4739,8 @@ function renderExportGallery(){
             slide.composedDataURL;
 
 
-          a.download=fname;
+          a.download =
+            fname;
 
 
           a.click();
@@ -5548,24 +4763,22 @@ function renderExportGallery(){
 
 
   if(
-    gallery.children.length===0
+    gallery.children.length === 0
   ){
 
-    gallery.innerHTML = `
-      <p style="color:var(--muted);font-size:13px;">
-        No composed slides yet — go to step 04 and hit
-        "Compose slide".
-      </p>
-    `;
+    gallery.innerHTML =
+      `<p style="color:var(--muted);font-size:13px;">
+        No composed slides yet — go to step 04 and compose a slide.
+      </p>`;
 
   }
 
 }
 
 
-// ============================================================
-// ZIP EXPORT
-// ============================================================
+/* =========================================================
+   ZIP EXPORT
+========================================================= */
 
 document
   .getElementById(
@@ -5573,33 +4786,32 @@ document
   )
   .addEventListener(
     'click',
-    async()=>{
+    async () => {
 
       const zip =
         new JSZip();
 
 
-      let hasComposed=false;
+      let hasComposed =
+        false;
 
 
       slides.forEach(
-        (slide,idx)=>{
+        (slide,idx) => {
 
           if(
             !slide.composedDataURL
           ){
-
             return;
-
           }
 
 
-          hasComposed=true;
+          hasComposed =
+            true;
 
 
           const base64 =
-            slide
-              .composedDataURL
+            slide.composedDataURL
               .split(',')[1];
 
 
@@ -5659,12 +4871,13 @@ document
           (
             title &&
             title.trim()
-              ?title.trim()
-              :'carousel_slides'
-          ).replace(
-            /[^a-z0-9]+/gi,
-            '_'
+              ? title.trim()
+              : 'carousel_slides'
           )
+            .replace(
+              /[^a-z0-9]+/gi,
+              '_'
+            )
         }.zip`;
 
 
@@ -5672,12 +4885,15 @@ document
 
 
       /*
-        Save the full state, including:
-        - 1/2/3 dialogues
-        - frame positions
+        Save a deep snapshot.
+
+        This preserves:
+        - frames
         - zoom
-        - caption positions
-        - composed images
+        - image position
+        - text
+        - text position
+        - composed image
       */
 
       await pushProjectToHistory(
@@ -5689,9 +4905,9 @@ document
   );
 
 
-// ============================================================
-// CONTINUE TO CAPTURE
-// ============================================================
+/* =========================================================
+   TO CAPTURE
+========================================================= */
 
 document
   .getElementById(
@@ -5699,7 +4915,7 @@ document
   )
   .addEventListener(
     'click',
-    ()=>{
+    () => {
 
       goToStep(4);
 
@@ -5713,37 +4929,28 @@ document
   );
 
 
-// ============================================================
-// WINDOW RESIZE
-// ============================================================
+/* =========================================================
+   OPEN CAPTURE STEP
+========================================================= */
 
-window.addEventListener(
-  'resize',
-  ()=>{
+document
+  .querySelector(
+    '.step-tab[data-step="4"]'
+  )
+  .addEventListener(
+    'click',
+    () => {
 
-    if(
-      document.getElementById(
-        'panel-4'
-      ).style.display!=='none'
-    ){
+      if(slides.length){
 
-      slides.forEach(
-        (slide,idx)=>{
+        renderSlideCards();
 
-          syncEditableFontSize(
-            idx
-          );
-
-        }
-      );
+      }
 
     }
-
-  }
-);
+  );
 
 </script>
 
 </body>
 </html>
-```
