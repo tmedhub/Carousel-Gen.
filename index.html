@@ -386,6 +386,9 @@ input[type=range]{
   color:var(--paper);
   margin-bottom:10px;
   line-height:1.4;
+  cursor:text;
+  outline:none;
+  user-select:text;
 }
 
 .thumb{
@@ -2560,6 +2563,93 @@ function syncEditableFontSize(idx){
 
 
 // ============================================================
+// BIND DIALOGUE TEXT
+// ============================================================
+
+function bindDialogueEditable(
+  el,
+  container
+){
+
+  const idx=
+    parseInt(
+      el.dataset.idx
+    );
+
+  const lineIndex=
+    parseInt(
+      el.dataset.line
+    );
+
+  const slide=
+    slides[idx];
+
+  const line=
+    slide.lines[lineIndex];
+
+  let debounceTimer=null;
+
+  function syncDialogue(){
+    const text=
+      el.innerText
+        .replace(/\n+$/,'');
+
+    line.text=text;
+
+    /*
+      Keep the compose-slide caption text in sync immediately.
+    */
+    const captionEl=
+      container.querySelector(
+        `.caption-editable[data-idx="${idx}"][data-line="${lineIndex}"]`
+      );
+
+    if(captionEl && captionEl.innerText!==text){
+      captionEl.innerText=text;
+    }
+
+    composeSlide(idx);
+  }
+
+  el.addEventListener(
+    'input',
+    ()=>{
+      clearTimeout(
+        debounceTimer
+      );
+
+      debounceTimer=
+        setTimeout(
+          syncDialogue,
+          300
+        );
+    }
+  );
+
+  el.addEventListener(
+    'keydown',
+    e=>{
+      if(e.key==='Enter'){
+        e.stopPropagation();
+      }
+    }
+  );
+
+  el.addEventListener(
+    'blur',
+    ()=>{
+      clearTimeout(
+        debounceTimer
+      );
+
+      syncDialogue();
+    }
+  );
+
+}
+
+
+// ============================================================
 // BIND CAPTION BOX
 // ============================================================
 
@@ -2904,6 +2994,25 @@ function bindCaptionEditable(
     latestX=e.clientX;
     latestY=e.clientY;
 
+    /*
+      If the browser is currently selecting text inside the
+      contenteditable caption, leave the selection alone instead
+      of turning that selection gesture into a box drag.
+    */
+    const selection=window.getSelection();
+
+    if(
+      selection &&
+      !selection.isCollapsed &&
+      el.contains(selection.anchorNode) &&
+      el.contains(selection.focusNode)
+    ){
+      dragging=false;
+      moved=false;
+      pointerId=null;
+      return;
+    }
+
     const dx=
       latestX-pointerStartX;
 
@@ -3212,8 +3321,14 @@ function renderSlideCards(){
               </h4>
 
 
-              <div class="line-text">
-                "${escapeHTML(line.text)}"
+              <div
+                class="line-text"
+                data-idx="${idx}"
+                data-line="${lineIndex}"
+                contenteditable="true"
+                spellcheck="false"
+              >
+                ${escapeHTML(line.text)}
               </div>
 
 
@@ -3388,6 +3503,24 @@ function renderSlideCards(){
 
     }
   );
+
+
+  // ==========================================================
+  // DIALOGUE TEXT
+  // ==========================================================
+
+  container
+    .querySelectorAll(
+      '.line-text[contenteditable="true"]'
+    )
+    .forEach(el=>{
+
+      bindDialogueEditable(
+        el,
+        container
+      );
+
+    });
 
 
   // ==========================================================
