@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1177,6 +1178,9 @@ Adil: You stop trying to control how they respond."
     <video
       id="videoPreview"
       class="preview"
+      playsinline
+      muted
+      preload="auto"
     ></video>
 
 
@@ -1543,6 +1547,7 @@ function handleVideoFile(file){
 
 
   vp.src=url;
+  vp.load();
 
 
   vp.addEventListener(
@@ -1553,6 +1558,16 @@ function handleVideoFile(file){
         'scrubber'
       ).max=vp.duration;
 
+    },
+    {once:true}
+  );
+
+  vp.addEventListener(
+    'loadeddata',
+    ()=>{
+      if(vp.currentTime===0){
+        try{ vp.currentTime=0.001; }catch(err){}
+      }
     },
     {once:true}
   );
@@ -2408,17 +2423,26 @@ function fmtTime(t){
 
 function captureCurrentFrame(){
 
+  if(
+    !vp.videoWidth ||
+    !vp.videoHeight ||
+    vp.readyState < 2
+  ){
+    return null;
+  }
+
   const c =
     document.createElement(
       'canvas'
     );
 
-
   c.width=vp.videoWidth;
   c.height=vp.videoHeight;
 
+  const ctx=
+    c.getContext('2d');
 
-  c.getContext('2d').drawImage(
+  ctx.drawImage(
     vp,
     0,
     0,
@@ -2426,12 +2450,10 @@ function captureCurrentFrame(){
     c.height
   );
 
-
   return c.toDataURL(
     'image/jpeg',
     0.92
   );
-
 }
 
 
@@ -3535,13 +3557,16 @@ function renderSlideCards(){
             slides[idx].lines[lineIndex];
 
 
-          if(!vp.videoWidth || !vp.videoHeight){
+          const capturedFrame =
+            captureCurrentFrame();
+
+          if(!capturedFrame){
             alert('The video frame is not ready yet. Scrub to a loaded frame and try again.');
             return;
           }
 
           line.frameDataURL =
-            captureCurrentFrame();
+            capturedFrame;
 
 
           line.zoom =
@@ -4155,6 +4180,10 @@ function loadCachedImg(src){
 
         resolve(im);
 
+      };
+
+      im.onerror=()=>{
+        resolve(null);
       };
 
 
@@ -5736,3 +5765,4 @@ window.addEventListener(
 
 </body>
 </html>
+```
