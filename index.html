@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -387,9 +386,23 @@ input[type=range]{
   color:var(--paper);
   margin-bottom:10px;
   line-height:1.4;
-  cursor:text;
+}
+
+.dialogue-editable{
+  border:1px solid transparent;
+  border-radius:5px;
+  padding:3px 4px;
   outline:none;
-  user-select:text;
+  cursor:text;
+}
+
+.dialogue-editable::before{content:'\"';}
+.dialogue-editable::after{content:'\"';}
+
+.dialogue-editable:hover,
+.dialogue-editable:focus{
+  border-color:var(--teal);
+  background:rgba(45,212,191,.06);
 }
 
 .thumb{
@@ -511,6 +524,31 @@ canvas.thumb{
   The canvas underneath does NOT get re-composed.
 */
 
+.alignment-guide{
+  position:absolute;
+  pointer-events:none;
+  z-index:25;
+  display:none;
+  background:var(--teal);
+  box-shadow:0 0 0 1px rgba(45,212,191,.18);
+}
+
+.alignment-guide.vertical{
+  top:0;
+  bottom:0;
+  width:1px;
+}
+
+.alignment-guide.horizontal{
+  left:0;
+  right:0;
+  height:1px;
+}
+
+.alignment-guide.active{
+  display:block;
+}
+
 .caption-editable{
   position:absolute;
 
@@ -612,40 +650,18 @@ canvas.thumb{
   cursor:text;
 }
 
+.caption-editable.editing{
+  border-color:var(--teal);
+  background:rgba(0,0,0,.45);
+  color:rgba(255,255,255,.95);
+  cursor:text;
+}
+
 
 .edit-hint{
   font-size:11px;
   color:var(--muted);
   text-align:center;
-}
-
-/* ============================================================
-   CANVA-STYLE ALIGNMENT GUIDES
-============================================================ */
-
-.alignment-guide{
-  position:absolute;
-  z-index:20;
-  pointer-events:none;
-  display:none;
-}
-
-.alignment-guide.vertical{
-  top:0;
-  bottom:0;
-  width:1px;
-  background:var(--teal);
-}
-
-.alignment-guide.horizontal{
-  left:0;
-  right:0;
-  height:1px;
-  background:var(--teal);
-}
-
-.caption-editable.dragging{
-  user-select:none;
 }
 
 
@@ -1178,9 +1194,6 @@ Adil: You stop trying to control how they respond."
     <video
       id="videoPreview"
       class="preview"
-      playsinline
-      muted
-      preload="auto"
     ></video>
 
 
@@ -1547,7 +1560,6 @@ function handleVideoFile(file){
 
 
   vp.src=url;
-  vp.load();
 
 
   vp.addEventListener(
@@ -1558,16 +1570,6 @@ function handleVideoFile(file){
         'scrubber'
       ).max=vp.duration;
 
-    },
-    {once:true}
-  );
-
-  vp.addEventListener(
-    'loadeddata',
-    ()=>{
-      if(vp.currentTime===0){
-        try{ vp.currentTime=0.001; }catch(err){}
-      }
     },
     {once:true}
   );
@@ -2326,74 +2328,52 @@ document
 document.addEventListener(
   'keydown',
   e=>{
+    const active=document.activeElement;
+    const activeTag=(active && active.tagName)||'';
+    const panel4=document.getElementById('panel-4');
 
-    const activeTag =
-      (
-        document.activeElement &&
-        document.activeElement.tagName
-      ) || '';
+    if(!panel4 || panel4.style.display==='none') return;
 
+    const selected=document.querySelector('.caption-editable.selected');
+    const editing=selected && (
+      selected.classList.contains('editing') ||
+      active===selected ||
+      activeTag==='INPUT' || activeTag==='TEXTAREA' || activeTag==='SELECT'
+    );
 
-    if(
-      [
-        'INPUT',
-        'TEXTAREA',
-        'SELECT'
-      ].includes(activeTag)
-    ){
-
+    if(selected && !editing && ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){
+      e.preventDefault();
+      const idx=parseInt(selected.dataset.idx);
+      const lineIndex=parseInt(selected.dataset.line);
+      const line=slides[idx]?.lines[lineIndex];
+      if(line){
+        const step=e.shiftKey?0.01:0.0025;
+        if(e.key==='ArrowLeft') line.captionX-=step;
+        if(e.key==='ArrowRight') line.captionX+=step;
+        if(e.key==='ArrowUp') line.captionY-=step;
+        if(e.key==='ArrowDown') line.captionY+=step;
+        line.captionX=Math.max(0.005,Math.min(0.995,line.captionX));
+        line.captionY=Math.max(-0.05,Math.min(1.08,line.captionY));
+        selected.style.left=(line.captionX*100)+'%';
+        selected.style.top=(line.captionY*100)+'%';
+        composeSlide(idx);
+      }
       return;
-
     }
 
-
-    const panel4 =
-      document.getElementById(
-        'panel-4'
-      );
-
-
-    if(
-      !panel4 ||
-      panel4.style.display==='none'
-    ){
-
-      return;
-
-    }
-
-
+    // Preserve the original video frame stepping behavior.
+    if(['INPUT','TEXTAREA','SELECT'].includes(activeTag)) return;
     if(!vp.duration) return;
 
-
     if(e.key==='ArrowRight'){
-
       e.preventDefault();
-
-      vp.currentTime =
-        Math.min(
-          vp.duration,
-          vp.currentTime+5
-        );
-
-    }
-
-
-    else if(e.key==='ArrowLeft'){
-
+      vp.currentTime=Math.min(vp.duration,vp.currentTime+5);
+    }else if(e.key==='ArrowLeft'){
       e.preventDefault();
-
-      vp.currentTime =
-        Math.max(
-          0,
-          vp.currentTime-5
-        );
-
+      vp.currentTime=Math.max(0,vp.currentTime-5);
     }
-
   }
 );
-
 
 function fmtTime(t){
 
@@ -2423,26 +2403,17 @@ function fmtTime(t){
 
 function captureCurrentFrame(){
 
-  if(
-    !vp.videoWidth ||
-    !vp.videoHeight ||
-    vp.readyState < 2
-  ){
-    return null;
-  }
-
   const c =
     document.createElement(
       'canvas'
     );
 
+
   c.width=vp.videoWidth;
   c.height=vp.videoHeight;
 
-  const ctx=
-    c.getContext('2d');
 
-  ctx.drawImage(
+  c.getContext('2d').drawImage(
     vp,
     0,
     0,
@@ -2450,10 +2421,12 @@ function captureCurrentFrame(){
     c.height
   );
 
+
   return c.toDataURL(
     'image/jpeg',
     0.92
   );
+
 }
 
 
@@ -2614,93 +2587,6 @@ function syncEditableFontSize(idx){
 
 
 // ============================================================
-// BIND DIALOGUE TEXT
-// ============================================================
-
-function bindDialogueEditable(
-  el,
-  container
-){
-
-  const idx=
-    parseInt(
-      el.dataset.idx
-    );
-
-  const lineIndex=
-    parseInt(
-      el.dataset.line
-    );
-
-  const slide=
-    slides[idx];
-
-  const line=
-    slide.lines[lineIndex];
-
-  let debounceTimer=null;
-
-  function syncDialogue(){
-    const text=
-      el.innerText
-        .replace(/\n+$/,'');
-
-    line.text=text;
-
-    /*
-      Keep the compose-slide caption text in sync immediately.
-    */
-    const captionEl=
-      container.querySelector(
-        `.caption-editable[data-idx="${idx}"][data-line="${lineIndex}"]`
-      );
-
-    if(captionEl && captionEl.innerText!==text){
-      captionEl.innerText=text;
-    }
-
-    composeSlide(idx);
-  }
-
-  el.addEventListener(
-    'input',
-    ()=>{
-      clearTimeout(
-        debounceTimer
-      );
-
-      debounceTimer=
-        setTimeout(
-          syncDialogue,
-          300
-        );
-    }
-  );
-
-  el.addEventListener(
-    'keydown',
-    e=>{
-      if(e.key==='Enter'){
-        e.stopPropagation();
-      }
-    }
-  );
-
-  el.addEventListener(
-    'blur',
-    ()=>{
-      clearTimeout(
-        debounceTimer
-      );
-
-      syncDialogue();
-    }
-  );
-
-}
-
-
-// ============================================================
 // BIND CAPTION BOX
 // ============================================================
 
@@ -2713,7 +2599,6 @@ function bindCaptionEditable(
   const lineIndex=parseInt(el.dataset.line);
   const slide=slides[idx];
   const line=slide.lines[lineIndex];
-
   let debounceTimer=null;
   let dragging=false;
   let moved=false;
@@ -2725,200 +2610,124 @@ function bindCaptionEditable(
   let latestX=0;
   let latestY=0;
   let dragFrame=null;
+  let editing=false;
 
   if(line.captionX==null) line.captionX=0.5;
   if(line.captionY==null){
     line.captionY=getCaptionDefaultY(lineIndex,slide.lines.length);
   }
 
-  const wrap=()=>el.closest('.slide-preview-wrap');
-
   function updateBoxPosition(){
     el.style.left=(line.captionX*100)+'%';
     el.style.top=(line.captionY*100)+'%';
   }
 
-  function getGuides(){
-    const w=wrap();
-    return {
-      vertical:w ? w.querySelector('.alignment-guide.vertical') : null,
-      horizontal:w ? w.querySelector('.alignment-guide.horizontal') : null
-    };
-  }
-
-  function hideGuides(){
-    const g=getGuides();
-    if(g.vertical) g.vertical.style.display='none';
-    if(g.horizontal) g.horizontal.style.display='none';
-  }
-
-  function showAlignmentGuides(){
-    const w=wrap();
-    if(!w) return;
-
-    const g=getGuides();
-    const rect=w.getBoundingClientRect();
-    if(!rect.width || !rect.height) return;
-
-    const threshold=0.012;
-    const x=line.captionX;
-    const y=line.captionY;
-
-    let snapX=null;
-    let snapY=null;
-
-    // Frame guides: center and outer edges.
-    const xCandidates=[
-      {v:0,label:'left'},
-      {v:0.5,label:'center'},
-      {v:1,label:'right'}
-    ];
-    const yCandidates=[
-      {v:0,label:'top'},
-      {v:0.5,label:'center'},
-      {v:1,label:'bottom'}
-    ];
-
-    // Other caption boxes: center lines and edges.
-    container.querySelectorAll(
-      `.caption-editable[data-idx="${idx}"]`
-    ).forEach(other=>{
-      if(other===el) return;
-      const r=other.getBoundingClientRect();
-      const orx=(r.left+r.width/2-rect.left)/rect.width;
-      const ory=(r.top+r.height/2-rect.top)/rect.height;
-      const ol=(r.left-rect.left)/rect.width;
-      const rr=(r.right-rect.left)/rect.width;
-      const ot=(r.top-rect.top)/rect.height;
-      const ob=(r.bottom-rect.top)/rect.height;
-      xCandidates.push({v:orx,label:'other-center'});
-      xCandidates.push({v:ol,label:'other-left'});
-      xCandidates.push({v:rr,label:'other-right'});
-      yCandidates.push({v:ory,label:'other-center'});
-      yCandidates.push({v:ot,label:'other-top'});
-      yCandidates.push({v:ob,label:'other-bottom'});
-    });
-
-    let bestX=null;
-    let bestY=null;
-
-    xCandidates.forEach(c=>{
-      const d=Math.abs(x-c.v);
-      if(d<=threshold && (!bestX || d<bestX.d)) bestX={...c,d};
-    });
-    yCandidates.forEach(c=>{
-      const d=Math.abs(y-c.v);
-      if(d<=threshold && (!bestY || d<bestY.d)) bestY={...c,d};
-    });
-
-    if(bestX && g.vertical){
-      g.vertical.style.left=(bestX.v*100)+'%';
-      g.vertical.style.display='block';
-    }else if(g.vertical){
-      g.vertical.style.display='none';
-    }
-
-    if(bestY && g.horizontal){
-      g.horizontal.style.top=(bestY.v*100)+'%';
-      g.horizontal.style.display='block';
-    }else if(g.horizontal){
-      g.horizontal.style.display='none';
-    }
-  }
-
-  function snapPosition(){
-    const threshold=0.012;
-    let snappedX=false;
-    let snappedY=false;
-    const xCandidates=[0,0.5,1];
-    const yCandidates=[0,0.5,1];
-
-    container.querySelectorAll(
-      `.caption-editable[data-idx="${idx}"]`
-    ).forEach(other=>{
-      if(other===el) return;
-      const r=other.getBoundingClientRect();
-      const wr=wrap().getBoundingClientRect();
-      xCandidates.push(
-        (r.left+r.width/2-wr.left)/wr.width,
-        (r.left-wr.left)/wr.width,
-        (r.right-wr.left)/wr.width
-      );
-      yCandidates.push(
-        (r.top+r.height/2-wr.top)/wr.height,
-        (r.top-wr.top)/wr.height,
-        (r.bottom-wr.top)/wr.height
-      );
-    });
-
-    for(const v of xCandidates){
-      if(Math.abs(line.captionX-v)<=threshold){
-        line.captionX=v;
-        snappedX=true;
-        break;
-      }
-    }
-    for(const v of yCandidates){
-      if(Math.abs(line.captionY-v)<=threshold){
-        line.captionY=v;
-        snappedY=true;
-        break;
-      }
-    }
-
-    return snappedX||snappedY;
-  }
-
   updateBoxPosition();
 
-  // Selecting the box does NOT disable normal browser text selection.
-  el.addEventListener('click',e=>{
-    e.stopPropagation();
+  function selectOnly(){
     document.querySelectorAll('.caption-editable.selected').forEach(other=>{
       if(other!==el) other.classList.remove('selected');
     });
     el.classList.add('selected');
-  });
+  }
 
-  document.addEventListener('click',e=>{
-    if(!el.contains(e.target)) el.classList.remove('selected');
-  });
+  function setEditing(value){
+    editing=value;
+    el.classList.toggle('editing',value);
+    if(value){
+      el.classList.add('selected');
+    }
+  }
 
-  function syncText(){
-    const text=el.innerText.replace(/\n+$/,'');
+  function syncText(sourceEl=el){
+    const text=sourceEl.innerText.replace(/\n+$/,'');
     line.text=text;
-    const quoteEl=container.querySelector(
-      `.half-capture[data-idx="${idx}"][data-line="${lineIndex}"] .line-text`
-    );
-    if(quoteEl && quoteEl.innerText!==text) quoteEl.innerText=text;
+
+    container.querySelectorAll(
+      `.dialogue-editable[data-idx="${idx}"][data-line="${lineIndex}"], .caption-editable[data-idx="${idx}"][data-line="${lineIndex}"]`
+    ).forEach(other=>{
+      if(other!==sourceEl && other.innerText.replace(/\n+$/,'')!==text){
+        other.innerText=text;
+      }
+    });
+
     composeSlide(idx);
   }
 
+  el.addEventListener('click',e=>{
+    e.stopPropagation();
+    selectOnly();
+  });
+
+  el.addEventListener('dblclick',e=>{
+    e.stopPropagation();
+    setEditing(true);
+    try{
+      el.focus({preventScroll:true});
+    }catch(err){ el.focus(); }
+  });
+
   el.addEventListener('input',()=>{
+    if(!editing) return;
     clearTimeout(debounceTimer);
-    debounceTimer=setTimeout(syncText,300);
+    debounceTimer=setTimeout(()=>syncText(el),150);
+  });
+
+  el.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){
+      e.stopPropagation();
+      clearTimeout(debounceTimer);
+      debounceTimer=setTimeout(()=>syncText(el),100);
+      return;
+    }
+
+    // Arrow keys move the selected box only when the box is selected
+    // as an object. While editing, arrows retain normal text-caret behavior.
+    if(!editing && el.classList.contains('selected') &&
+       ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){
+      e.preventDefault();
+      const step=e.shiftKey?0.01:0.0025;
+      if(e.key==='ArrowLeft') line.captionX-=step;
+      if(e.key==='ArrowRight') line.captionX+=step;
+      if(e.key==='ArrowUp') line.captionY-=step;
+      if(e.key==='ArrowDown') line.captionY+=step;
+      line.captionX=Math.max(0.005,Math.min(0.995,line.captionX));
+      line.captionY=Math.max(-0.05,Math.min(1.08,line.captionY));
+      updateBoxPosition();
+      composeSlide(idx);
+    }
+  });
+
+  el.addEventListener('focus',()=>{
+    selectOnly();
+    setEditing(true);
   });
 
   el.addEventListener('blur',()=>{
     clearTimeout(debounceTimer);
-    syncText();
+    syncText(el);
+    setEditing(false);
   });
 
   function applyDragPosition(){
     dragFrame=null;
     if(!dragging || !moved) return;
-    const r=wrap()?.getBoundingClientRect();
-    if(!r || !r.width || !r.height) return;
 
-    line.captionX=Math.max(0.005,Math.min(0.995,
-      originalX+(latestX-pointerStartX)/r.width));
-    line.captionY=Math.max(-0.05,Math.min(1.08,
-      originalY+(latestY-pointerStartY)/r.height));
+    const wrap=el.closest('.slide-preview-wrap');
+    if(!wrap) return;
+    const rect=wrap.getBoundingClientRect();
+    if(!rect.width || !rect.height) return;
 
-    // Snap only when the user is very close to a guide.
-    snapPosition();
+    const dx=latestX-pointerStartX;
+    const dy=latestY-pointerStartY;
+    let newX=originalX+(dx/rect.width);
+    let newY=originalY+(dy/rect.height);
+
+    const snapped=snapCaptionPosition(el,newX,newY,wrap);
+    line.captionX=Math.max(0.005,Math.min(0.995,snapped.x));
+    line.captionY=Math.max(-0.05,Math.min(1.08,snapped.y));
+
     updateBoxPosition();
-    showAlignmentGuides();
   }
 
   function requestDragUpdate(){
@@ -2927,6 +2736,14 @@ function bindCaptionEditable(
 
   function startDrag(e){
     if(e.button!==undefined && e.button!==0) return;
+    selectOnly();
+    // Double-click/edit mode keeps native text selection behavior.
+    if(editing) return;
+
+    // A single click/drag selects the whole box instead of placing the
+    // caret. Double-click enters editing mode, where native text selection
+    // remains fully available.
+    e.preventDefault();
 
     dragging=true;
     moved=false;
@@ -2937,36 +2754,23 @@ function bindCaptionEditable(
     originalY=line.captionY;
     latestX=e.clientX;
     latestY=e.clientY;
-    el.classList.add('selected');
+
+    try{ el.setPointerCapture(e.pointerId); }catch(err){}
   }
 
   function moveDrag(e){
-    if(!dragging || e.pointerId!==pointerId) return;
-
+    if(!dragging) return;
+    if(pointerId!==null && e.pointerId!==pointerId) return;
     latestX=e.clientX;
     latestY=e.clientY;
-
     const dx=latestX-pointerStartX;
     const dy=latestY-pointerStartY;
 
     if(!moved){
-      if(Math.abs(dx)<4 && Math.abs(dy)<4) return;
-
-      /*
-        If the browser has started selecting text inside the
-        contenteditable, keep that selection instead of turning
-        the gesture into a box drag.
-      */
-      const sel=window.getSelection();
-      if(sel && !sel.isCollapsed && el.contains(sel.anchorNode)){
-        dragging=false;
-        return;
-      }
-
+      if(Math.abs(dx)<2 && Math.abs(dy)<2) return;
       moved=true;
       e.preventDefault();
       el.classList.add('dragging');
-      try{ el.setPointerCapture(e.pointerId); }catch(err){}
     }
 
     e.preventDefault();
@@ -2975,33 +2779,24 @@ function bindCaptionEditable(
 
   function finishDrag(e){
     if(!dragging) return;
-    if(e && e.pointerId!==undefined && e.pointerId!==pointerId) return;
-
-    if(e){
-      latestX=e.clientX;
-      latestY=e.clientY;
-    }
+    if(pointerId!==null && e && e.pointerId!==undefined && e.pointerId!==pointerId) return;
+    if(e){ latestX=e.clientX; latestY=e.clientY; }
 
     if(moved){
-      if(dragFrame!==null){
-        cancelAnimationFrame(dragFrame);
-        dragFrame=null;
-      }
+      if(dragFrame!==null){ cancelAnimationFrame(dragFrame); dragFrame=null; }
       applyDragPosition();
-      composeSlide(idx);
     }
 
     dragging=false;
     el.classList.remove('dragging');
-    hideGuides();
+    hideAlignmentGuides(el.closest('.slide-preview-wrap'));
 
     try{
-      if(pointerId!==null && el.hasPointerCapture(pointerId)){
-        el.releasePointerCapture(pointerId);
-      }
+      if(pointerId!==null && el.hasPointerCapture(pointerId)) el.releasePointerCapture(pointerId);
     }catch(err){}
 
     pointerId=null;
+    if(moved) composeSlide(idx);
     moved=false;
   }
 
@@ -3009,32 +2804,90 @@ function bindCaptionEditable(
   el.addEventListener('pointermove',moveDrag);
   el.addEventListener('pointerup',finishDrag);
   el.addEventListener('pointercancel',finishDrag);
-
-  // Keyboard movement: Alt + arrows works even while editing text.
-  el.addEventListener('keydown',e=>{
-    if(!e.altKey) return;
-    const step=e.shiftKey ? 0.01 : 0.0025;
-    let changed=true;
-    if(e.key==='ArrowLeft') line.captionX-=step;
-    else if(e.key==='ArrowRight') line.captionX+=step;
-    else if(e.key==='ArrowUp') line.captionY-=step;
-    else if(e.key==='ArrowDown') line.captionY+=step;
-    else changed=false;
-    if(!changed) return;
-    e.preventDefault();
-    line.captionX=Math.max(0.005,Math.min(0.995,line.captionX));
-    line.captionY=Math.max(-0.05,Math.min(1.08,line.captionY));
-    snapPosition();
-    updateBoxPosition();
-    showAlignmentGuides();
-    clearTimeout(debounceTimer);
-    debounceTimer=setTimeout(()=>{
-      hideGuides();
-      composeSlide(idx);
-    },180);
-  });
+  el.addEventListener('lostpointercapture',()=>{ if(dragging) finishDrag(); });
 
   syncEditableFontSize(idx);
+}
+
+// ============================================================
+// ALIGNMENT GUIDES / SNAPPING
+// ============================================================
+
+function hideAlignmentGuides(wrap){
+  if(!wrap) return;
+  wrap.querySelectorAll('.alignment-guide').forEach(g=>g.classList.remove('active'));
+}
+
+function showAlignmentGuides(wrap,vertical=[],horizontal=[]){
+  if(!wrap) return;
+  const v=wrap.querySelector('.alignment-guide.vertical');
+  const h=wrap.querySelector('.alignment-guide.horizontal');
+  if(!v || !h) return;
+  v.classList.remove('active');
+  h.classList.remove('active');
+  if(vertical.length){
+    v.style.left=(vertical[0]*100)+'%';
+    v.classList.add('active');
+  }
+  if(horizontal.length){
+    h.style.top=(horizontal[0]*100)+'%';
+    h.classList.add('active');
+  }
+}
+
+function snapCaptionPosition(el,x,y,wrap){
+  const SNAP=0.012;
+  const wr=wrap.getBoundingClientRect();
+  const er=el.getBoundingClientRect();
+  const ew=er.width/wr.width;
+  const eh=er.height/wr.height;
+
+  const candidateX=[
+    {value:ew/2,guide:0,label:'frame-left'},
+    {value:0.5,guide:0.5,label:'frame-center'},
+    {value:1-ew/2,guide:1,label:'frame-right'}
+  ];
+  const candidateY=[
+    {value:eh/2,guide:0,label:'frame-top'},
+    {value:0.5,guide:0.5,label:'frame-center'},
+    {value:1-eh/2,guide:1,label:'frame-bottom'}
+  ];
+
+  // Other boxes: centers and matching edges.
+  wrap.querySelectorAll('.caption-editable').forEach(other=>{
+    if(other===el) return;
+    const r=other.getBoundingClientRect();
+    const cx=((r.left+r.width/2)-wr.left)/wr.width;
+    const cy=((r.top+r.height/2)-wr.top)/wr.height;
+    const l=(r.left-wr.left)/wr.width;
+    const rr=(r.right-wr.left)/wr.width;
+    const t=(r.top-wr.top)/wr.height;
+    const b=(r.bottom-wr.top)/wr.height;
+    candidateX.push({value:cx,guide:cx,label:'other-center'});
+    candidateX.push({value:l+ew/2,guide:l,label:'other-left'});
+    candidateX.push({value:rr-ew/2,guide:rr,label:'other-right'});
+    candidateY.push({value:cy,guide:cy,label:'other-center'});
+    candidateY.push({value:t+eh/2,guide:t,label:'other-top'});
+    candidateY.push({value:b-eh/2,guide:b,label:'other-bottom'});
+  });
+
+  let bestX=null,bestY=null;
+  for(const c of candidateX){
+    const d=Math.abs(x-c.value);
+    if(d<=SNAP && (!bestX || d<bestX.d)) bestX={...c,d};
+  }
+  for(const c of candidateY){
+    const d=Math.abs(y-c.value);
+    if(d<=SNAP && (!bestY || d<bestY.d)) bestY={...c,d};
+  }
+
+  showAlignmentGuides(
+    wrap,
+    bestX?[bestX.guide]:[],
+    bestY?[bestY.guide]:[]
+  );
+
+  return {x:bestX?bestX.value:x,y:bestY?bestY.value:y};
 }
 
 // ============================================================
@@ -3207,14 +3060,13 @@ function renderSlideCards(){
 
 
               <div
-                class="line-text"
+                class="line-text dialogue-editable"
                 data-idx="${idx}"
                 data-line="${lineIndex}"
                 contenteditable="true"
                 spellcheck="false"
-              >
-                ${escapeHTML(line.text)}
-              </div>
+                title="Edit dialogue"
+              >${escapeHTML(line.text)}</div>
 
 
               ${
@@ -3349,6 +3201,9 @@ function renderSlideCards(){
 
           <div class="slide-preview-wrap">
 
+            <div class="alignment-guide vertical"></div>
+            <div class="alignment-guide horizontal"></div>
+
             <canvas
               class="slideCanvas"
               data-idx="${idx}"
@@ -3356,8 +3211,6 @@ function renderSlideCards(){
               height="1350"
             ></canvas>
 
-            <div class="alignment-guide vertical" data-guide="vertical"></div>
-            <div class="alignment-guide horizontal" data-guide="horizontal"></div>
 
             ${captionHTML}
 
@@ -3367,8 +3220,8 @@ function renderSlideCards(){
           <div class="edit-hint">
 
             Click a caption to select it.
-            Drag the selected box to move it.
-            The image will stay still while moving.
+            Drag to move it · double-click to edit text.
+            Arrow keys move the selected box · guides snap while dragging.
 
           </div>
 
@@ -3393,24 +3246,6 @@ function renderSlideCards(){
 
 
   // ==========================================================
-  // DIALOGUE TEXT
-  // ==========================================================
-
-  container
-    .querySelectorAll(
-      '.line-text[contenteditable="true"]'
-    )
-    .forEach(el=>{
-
-      bindDialogueEditable(
-        el,
-        container
-      );
-
-    });
-
-
-  // ==========================================================
   // CAPTIONS
   // ==========================================================
 
@@ -3425,6 +3260,50 @@ function renderSlideCards(){
         container
       );
 
+    });
+
+  // ==========================================================
+  // EDITABLE DIALOGUE TEXT
+  // ==========================================================
+
+  container
+    .querySelectorAll('.dialogue-editable')
+    .forEach(el=>{
+      const idx=parseInt(el.dataset.idx);
+      const lineIndex=parseInt(el.dataset.line);
+      let timer=null;
+
+      function syncDialogue(){
+        const raw=el.innerText.replace(/\n+$/,'');
+        slides[idx].lines[lineIndex].text=raw;
+
+        const text=escapeHTML(raw);
+        container.querySelectorAll(
+          `.caption-editable[data-idx="${idx}"][data-line="${lineIndex}"], .dialogue-editable[data-idx="${idx}"][data-line="${lineIndex}"]`
+        ).forEach(other=>{
+          if(other!==el) other.innerText=raw;
+        });
+
+        composeSlide(idx);
+      }
+
+      el.addEventListener('input',()=>{
+        clearTimeout(timer);
+        timer=setTimeout(syncDialogue,120);
+      });
+
+      el.addEventListener('blur',()=>{
+        clearTimeout(timer);
+        syncDialogue();
+      });
+
+      el.addEventListener('keydown',e=>{
+        if(e.key==='Enter'){
+          e.preventDefault();
+          syncDialogue();
+          el.blur();
+        }
+      });
     });
 
 
@@ -3557,16 +3436,8 @@ function renderSlideCards(){
             slides[idx].lines[lineIndex];
 
 
-          const capturedFrame =
-            captureCurrentFrame();
-
-          if(!capturedFrame){
-            alert('The video frame is not ready yet. Scrub to a loaded frame and try again.');
-            return;
-          }
-
           line.frameDataURL =
-            capturedFrame;
+            captureCurrentFrame();
 
 
           line.zoom =
@@ -3608,10 +3479,6 @@ function renderSlideCards(){
 
 
           renderSlideCards();
-
-          requestAnimationFrame(()=>{
-            composeSlide(idx);
-          });
 
         }
       );
@@ -4180,10 +4047,6 @@ function loadCachedImg(src){
 
         resolve(im);
 
-      };
-
-      im.onerror=()=>{
-        resolve(null);
       };
 
 
@@ -5765,4 +5628,3 @@ window.addEventListener(
 
 </body>
 </html>
-```
