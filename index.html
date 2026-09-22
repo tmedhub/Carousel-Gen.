@@ -388,23 +388,6 @@ input[type=range]{
   line-height:1.4;
 }
 
-.dialogue-editable{
-  border:1px solid transparent;
-  border-radius:5px;
-  padding:3px 4px;
-  outline:none;
-  cursor:text;
-}
-
-.dialogue-editable::before{content:'\"';}
-.dialogue-editable::after{content:'\"';}
-
-.dialogue-editable:hover,
-.dialogue-editable:focus{
-  border-color:var(--teal);
-  background:rgba(45,212,191,.06);
-}
-
 .thumb{
   width:100%;
   aspect-ratio:1080/675;
@@ -524,31 +507,6 @@ canvas.thumb{
   The canvas underneath does NOT get re-composed.
 */
 
-.alignment-guide{
-  position:absolute;
-  pointer-events:none;
-  z-index:25;
-  display:none;
-  background:var(--teal);
-  box-shadow:0 0 0 1px rgba(45,212,191,.18);
-}
-
-.alignment-guide.vertical{
-  top:0;
-  bottom:0;
-  width:1px;
-}
-
-.alignment-guide.horizontal{
-  left:0;
-  right:0;
-  height:1px;
-}
-
-.alignment-guide.active{
-  display:block;
-}
-
 .caption-editable{
   position:absolute;
 
@@ -647,13 +605,6 @@ canvas.thumb{
 
   color:rgba(255,255,255,.95);
 
-  cursor:text;
-}
-
-.caption-editable.editing{
-  border-color:var(--teal);
-  background:rgba(0,0,0,.45);
-  color:rgba(255,255,255,.95);
   cursor:text;
 }
 
@@ -2328,52 +2279,74 @@ document
 document.addEventListener(
   'keydown',
   e=>{
-    const active=document.activeElement;
-    const activeTag=(active && active.tagName)||'';
-    const panel4=document.getElementById('panel-4');
 
-    if(!panel4 || panel4.style.display==='none') return;
+    const activeTag =
+      (
+        document.activeElement &&
+        document.activeElement.tagName
+      ) || '';
 
-    const selected=document.querySelector('.caption-editable.selected');
-    const editing=selected && (
-      selected.classList.contains('editing') ||
-      active===selected ||
-      activeTag==='INPUT' || activeTag==='TEXTAREA' || activeTag==='SELECT'
-    );
 
-    if(selected && !editing && ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){
-      e.preventDefault();
-      const idx=parseInt(selected.dataset.idx);
-      const lineIndex=parseInt(selected.dataset.line);
-      const line=slides[idx]?.lines[lineIndex];
-      if(line){
-        const step=e.shiftKey?0.01:0.0025;
-        if(e.key==='ArrowLeft') line.captionX-=step;
-        if(e.key==='ArrowRight') line.captionX+=step;
-        if(e.key==='ArrowUp') line.captionY-=step;
-        if(e.key==='ArrowDown') line.captionY+=step;
-        line.captionX=Math.max(0.005,Math.min(0.995,line.captionX));
-        line.captionY=Math.max(-0.05,Math.min(1.08,line.captionY));
-        selected.style.left=(line.captionX*100)+'%';
-        selected.style.top=(line.captionY*100)+'%';
-        composeSlide(idx);
-      }
+    if(
+      [
+        'INPUT',
+        'TEXTAREA',
+        'SELECT'
+      ].includes(activeTag)
+    ){
+
       return;
+
     }
 
-    // Preserve the original video frame stepping behavior.
-    if(['INPUT','TEXTAREA','SELECT'].includes(activeTag)) return;
+
+    const panel4 =
+      document.getElementById(
+        'panel-4'
+      );
+
+
+    if(
+      !panel4 ||
+      panel4.style.display==='none'
+    ){
+
+      return;
+
+    }
+
+
     if(!vp.duration) return;
 
+
     if(e.key==='ArrowRight'){
+
       e.preventDefault();
-      vp.currentTime=Math.min(vp.duration,vp.currentTime+5);
-    }else if(e.key==='ArrowLeft'){
-      e.preventDefault();
-      vp.currentTime=Math.max(0,vp.currentTime-5);
+
+      vp.currentTime =
+        Math.min(
+          vp.duration,
+          vp.currentTime+5
+        );
+
     }
+
+
+    else if(e.key==='ArrowLeft'){
+
+      e.preventDefault();
+
+      vp.currentTime =
+        Math.max(
+          0,
+          vp.currentTime-5
+        );
+
+    }
+
   }
 );
+
 
 function fmtTime(t){
 
@@ -2595,182 +2568,373 @@ function bindCaptionEditable(
   container
 ){
 
-  const idx=parseInt(el.dataset.idx);
-  const lineIndex=parseInt(el.dataset.line);
-  const slide=slides[idx];
-  const line=slide.lines[lineIndex];
-  let debounceTimer=null;
-  let dragging=false;
-  let moved=false;
-  let pointerId=null;
-  let pointerStartX=0;
-  let pointerStartY=0;
-  let originalX=0;
-  let originalY=0;
-  let latestX=0;
-  let latestY=0;
-  let dragFrame=null;
-  let editing=false;
+  const idx =
+    parseInt(
+      el.dataset.idx
+    );
 
-  if(line.captionX==null) line.captionX=0.5;
+  const lineIndex =
+    parseInt(
+      el.dataset.line
+    );
+
+  const slide =
+    slides[idx];
+
+  const line =
+    slide.lines[lineIndex];
+
+  let debounceTimer=null;
+
+  // ----------------------------------------------------------
+  // POSITION
+  // ----------------------------------------------------------
+
+  if(line.captionX==null){
+    line.captionX=0.5;
+  }
+
   if(line.captionY==null){
-    line.captionY=getCaptionDefaultY(lineIndex,slide.lines.length);
+    line.captionY =
+      getCaptionDefaultY(
+        lineIndex,
+        slide.lines.length
+      );
   }
 
   function updateBoxPosition(){
-    el.style.left=(line.captionX*100)+'%';
-    el.style.top=(line.captionY*100)+'%';
+    /*
+      Move ONLY the HTML text box.
+      The canvas underneath remains untouched.
+
+      Using percentages keeps the position stable when the
+      preview is resized.
+    */
+    el.style.left =
+      (line.captionX*100)+'%';
+
+    el.style.top =
+      (line.captionY*100)+'%';
   }
 
   updateBoxPosition();
 
-  function selectOnly(){
-    document.querySelectorAll('.caption-editable.selected').forEach(other=>{
-      if(other!==el) other.classList.remove('selected');
-    });
-    el.classList.add('selected');
-  }
+  // ----------------------------------------------------------
+  // SELECT BOX
+  // ----------------------------------------------------------
 
-  function setEditing(value){
-    editing=value;
-    el.classList.toggle('editing',value);
-    if(value){
-      el.classList.add('selected');
+  el.addEventListener(
+    'click',
+    e=>{
+      e.stopPropagation();
+
+      document
+        .querySelectorAll(
+          '.caption-editable.selected'
+        )
+        .forEach(other=>{
+          if(other!==el){
+            other.classList.remove(
+              'selected'
+            );
+          }
+        });
+
+      el.classList.add(
+        'selected'
+      );
     }
-  }
+  );
 
-  function syncText(sourceEl=el){
-    const text=sourceEl.innerText.replace(/\n+$/,'');
+  // ----------------------------------------------------------
+  // CLICK OUTSIDE = DESELECT
+  // ----------------------------------------------------------
+
+  document.addEventListener(
+    'click',
+    e=>{
+      if(!el.contains(e.target)){
+        el.classList.remove(
+          'selected'
+        );
+      }
+    }
+  );
+
+  // ----------------------------------------------------------
+  // TEXT EDITING
+  // ----------------------------------------------------------
+
+  function syncText(){
+    const text =
+      el.innerText
+        .replace(/\n+$/,'');
+
     line.text=text;
 
-    container.querySelectorAll(
-      `.dialogue-editable[data-idx="${idx}"][data-line="${lineIndex}"], .caption-editable[data-idx="${idx}"][data-line="${lineIndex}"]`
-    ).forEach(other=>{
-      if(other!==sourceEl && other.innerText.replace(/\n+$/,'')!==text){
-        other.innerText=text;
-      }
-    });
+    const quoteEl =
+      container.querySelector(
+        `.half-capture[data-idx="${idx}"][data-line="${lineIndex}"] .line-text`
+      );
+
+    if(quoteEl){
+      quoteEl.textContent =
+        `"${text}"`;
+    }
 
     composeSlide(idx);
   }
 
-  el.addEventListener('click',e=>{
-    e.stopPropagation();
-    selectOnly();
-  });
+  el.addEventListener(
+    'input',
+    ()=>{
+      clearTimeout(
+        debounceTimer
+      );
 
-  el.addEventListener('dblclick',e=>{
-    e.stopPropagation();
-    setEditing(true);
-    try{
-      el.focus({preventScroll:true});
-    }catch(err){ el.focus(); }
-  });
-
-  el.addEventListener('input',()=>{
-    if(!editing) return;
-    clearTimeout(debounceTimer);
-    debounceTimer=setTimeout(()=>syncText(el),150);
-  });
-
-  el.addEventListener('keydown',e=>{
-    if(e.key==='Enter'){
-      e.stopPropagation();
-      clearTimeout(debounceTimer);
-      debounceTimer=setTimeout(()=>syncText(el),100);
-      return;
+      debounceTimer =
+        setTimeout(
+          syncText,
+          500
+        );
     }
+  );
 
-    // Arrow keys move the selected box only when the box is selected
-    // as an object. While editing, arrows retain normal text-caret behavior.
-    if(!editing && el.classList.contains('selected') &&
-       ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){
-      e.preventDefault();
-      const step=e.shiftKey?0.01:0.0025;
-      if(e.key==='ArrowLeft') line.captionX-=step;
-      if(e.key==='ArrowRight') line.captionX+=step;
-      if(e.key==='ArrowUp') line.captionY-=step;
-      if(e.key==='ArrowDown') line.captionY+=step;
-      line.captionX=Math.max(0.005,Math.min(0.995,line.captionX));
-      line.captionY=Math.max(-0.05,Math.min(1.08,line.captionY));
-      updateBoxPosition();
-      composeSlide(idx);
+  el.addEventListener(
+    'keydown',
+    e=>{
+      if(e.key==='Enter'){
+        e.stopPropagation();
+        clearTimeout(
+          debounceTimer
+        );
+
+        debounceTimer =
+          setTimeout(
+            syncText,
+            300
+          );
+      }
     }
-  });
+  );
 
-  el.addEventListener('focus',()=>{
-    selectOnly();
-    setEditing(true);
-  });
+  el.addEventListener(
+    'focus',
+    ()=>{
+      el.classList.add(
+        'selected'
+      );
+    }
+  );
 
-  el.addEventListener('blur',()=>{
-    clearTimeout(debounceTimer);
-    syncText(el);
-    setEditing(false);
-  });
+  el.addEventListener(
+    'blur',
+    ()=>{
+      clearTimeout(
+        debounceTimer
+      );
+
+      syncText();
+    }
+  );
+
+  // ----------------------------------------------------------
+  // DRAGGING — HIGH PRECISION
+  // ----------------------------------------------------------
+
+  let dragging=false;
+  let moved=false;
+  let pointerId=null;
+
+  let pointerStartX=0;
+  let pointerStartY=0;
+
+  let originalX=0;
+  let originalY=0;
+
+  let latestX=0;
+  let latestY=0;
+  let dragFrame=null;
+
+  /*
+    The old implementation updated left/top directly on every
+    pointermove and used a small movement threshold. That can
+    feel sticky on a contenteditable element, especially when
+    dragging downward near the bottom of the preview.
+
+    This version:
+      - captures the pointer immediately
+      - uses the preview's actual displayed size
+      - updates through requestAnimationFrame
+      - preserves sub-pixel movement
+      - allows the caption to move slightly beyond the canvas
+        edge so the bottom section is not artificially blocked
+      - does NOT compose the canvas during the drag
+  */
 
   function applyDragPosition(){
     dragFrame=null;
-    if(!dragging || !moved) return;
 
-    const wrap=el.closest('.slide-preview-wrap');
-    if(!wrap) return;
-    const rect=wrap.getBoundingClientRect();
-    if(!rect.width || !rect.height) return;
+    if(!dragging || !moved){
+      return;
+    }
 
-    const dx=latestX-pointerStartX;
-    const dy=latestY-pointerStartY;
-    let newX=originalX+(dx/rect.width);
-    let newY=originalY+(dy/rect.height);
+    const wrap =
+      el.closest(
+        '.slide-preview-wrap'
+      );
 
-    const snapped=snapCaptionPosition(el,newX,newY,wrap);
-    line.captionX=Math.max(0.005,Math.min(0.995,snapped.x));
-    line.captionY=Math.max(-0.05,Math.min(1.08,snapped.y));
+    if(!wrap){
+      return;
+    }
+
+    const rect =
+      wrap.getBoundingClientRect();
+
+    if(!rect.width || !rect.height){
+      return;
+    }
+
+    const dx =
+      latestX-pointerStartX;
+
+    const dy =
+      latestY-pointerStartY;
+
+    /*
+      Convert the pointer movement directly into normalized
+      preview coordinates. Because the preview is the same
+      aspect ratio as the 1080x1350 canvas, this remains accurate
+      at every displayed size.
+    */
+    let newX =
+      originalX +
+      (dx/rect.width);
+
+    let newY =
+      originalY +
+      (dy/rect.height);
+
+    /*
+      Much looser bounds than before.
+
+      In particular, Y is allowed to go below 100% so the user
+      can place text genuinely at the bottom of the lower image.
+      The exported canvas naturally clips anything that is truly
+      outside the final image.
+    */
+    const paddingX=0.005;
+    const minY=-0.05;
+    const maxY=1.08;
+
+    newX =
+      Math.max(
+        paddingX,
+        Math.min(
+          1-paddingX,
+          newX
+        )
+      );
+
+    newY =
+      Math.max(
+        minY,
+        Math.min(
+          maxY,
+          newY
+        )
+      );
+
+    line.captionX=newX;
+    line.captionY=newY;
 
     updateBoxPosition();
   }
 
   function requestDragUpdate(){
-    if(dragFrame===null) dragFrame=requestAnimationFrame(applyDragPosition);
+    if(dragFrame===null){
+      dragFrame=
+        requestAnimationFrame(
+          applyDragPosition
+        );
+    }
   }
 
   function startDrag(e){
-    if(e.button!==undefined && e.button!==0) return;
-    selectOnly();
-    // Double-click/edit mode keeps native text selection behavior.
-    if(editing) return;
-
-    // A single click/drag selects the whole box instead of placing the
-    // caret. Double-click enters editing mode, where native text selection
-    // remains fully available.
-    e.preventDefault();
+    if(e.button!==undefined && e.button!==0){
+      return;
+    }
 
     dragging=true;
     moved=false;
     pointerId=e.pointerId;
+
     pointerStartX=e.clientX;
     pointerStartY=e.clientY;
+
     originalX=line.captionX;
     originalY=line.captionY;
+
     latestX=e.clientX;
     latestY=e.clientY;
 
-    try{ el.setPointerCapture(e.pointerId); }catch(err){}
+    el.classList.add(
+      'selected'
+    );
+
+    try{
+      el.setPointerCapture(
+        e.pointerId
+      );
+    }catch(err){}
   }
 
   function moveDrag(e){
-    if(!dragging) return;
-    if(pointerId!==null && e.pointerId!==pointerId) return;
+    if(!dragging){
+      return;
+    }
+
+    if(
+      pointerId!==null &&
+      e.pointerId!==pointerId
+    ){
+      return;
+    }
+
     latestX=e.clientX;
     latestY=e.clientY;
-    const dx=latestX-pointerStartX;
-    const dy=latestY-pointerStartY;
 
+    const dx=
+      latestX-pointerStartX;
+
+    const dy=
+      latestY-pointerStartY;
+
+    /*
+      A 2px threshold makes the interaction much more responsive
+      without turning an ordinary click into a drag.
+    */
     if(!moved){
-      if(Math.abs(dx)<2 && Math.abs(dy)<2) return;
+      if(
+        Math.abs(dx)<2 &&
+        Math.abs(dy)<2
+      ){
+        return;
+      }
+
       moved=true;
+
       e.preventDefault();
-      el.classList.add('dragging');
+
+      /*
+        Once movement begins, stop contenteditable from trying to
+        select text while the pointer is being dragged.
+      */
+      el.blur();
+
+      el.classList.add(
+        'dragging'
+      );
     }
 
     e.preventDefault();
@@ -2778,116 +2942,105 @@ function bindCaptionEditable(
   }
 
   function finishDrag(e){
-    if(!dragging) return;
-    if(pointerId!==null && e && e.pointerId!==undefined && e.pointerId!==pointerId) return;
-    if(e){ latestX=e.clientX; latestY=e.clientY; }
+    if(!dragging){
+      return;
+    }
+
+    if(
+      pointerId!==null &&
+      e &&
+      e.pointerId!==undefined &&
+      e.pointerId!==pointerId
+    ){
+      return;
+    }
+
+    /*
+      Apply the very last pointer position before releasing.
+    */
+    if(e){
+      latestX=e.clientX;
+      latestY=e.clientY;
+    }
 
     if(moved){
-      if(dragFrame!==null){ cancelAnimationFrame(dragFrame); dragFrame=null; }
+      if(dragFrame!==null){
+        cancelAnimationFrame(
+          dragFrame
+        );
+        dragFrame=null;
+      }
+
       applyDragPosition();
     }
 
     dragging=false;
-    el.classList.remove('dragging');
-    hideAlignmentGuides(el.closest('.slide-preview-wrap'));
+
+    el.classList.remove(
+      'dragging'
+    );
 
     try{
-      if(pointerId!==null && el.hasPointerCapture(pointerId)) el.releasePointerCapture(pointerId);
+      if(
+        pointerId!==null &&
+        el.hasPointerCapture(
+          pointerId
+        )
+      ){
+        el.releasePointerCapture(
+          pointerId
+        );
+      }
     }catch(err){}
 
     pointerId=null;
-    if(moved) composeSlide(idx);
+
+    if(moved){
+      /*
+        Only after release do we render the canvas.
+        This keeps dragging visually smooth.
+      */
+      composeSlide(idx);
+    }
+
     moved=false;
   }
 
-  el.addEventListener('pointerdown',startDrag);
-  el.addEventListener('pointermove',moveDrag);
-  el.addEventListener('pointerup',finishDrag);
-  el.addEventListener('pointercancel',finishDrag);
-  el.addEventListener('lostpointercapture',()=>{ if(dragging) finishDrag(); });
-
-  syncEditableFontSize(idx);
-}
-
-// ============================================================
-// ALIGNMENT GUIDES / SNAPPING
-// ============================================================
-
-function hideAlignmentGuides(wrap){
-  if(!wrap) return;
-  wrap.querySelectorAll('.alignment-guide').forEach(g=>g.classList.remove('active'));
-}
-
-function showAlignmentGuides(wrap,vertical=[],horizontal=[]){
-  if(!wrap) return;
-  const v=wrap.querySelector('.alignment-guide.vertical');
-  const h=wrap.querySelector('.alignment-guide.horizontal');
-  if(!v || !h) return;
-  v.classList.remove('active');
-  h.classList.remove('active');
-  if(vertical.length){
-    v.style.left=(vertical[0]*100)+'%';
-    v.classList.add('active');
-  }
-  if(horizontal.length){
-    h.style.top=(horizontal[0]*100)+'%';
-    h.classList.add('active');
-  }
-}
-
-function snapCaptionPosition(el,x,y,wrap){
-  const SNAP=0.012;
-  const wr=wrap.getBoundingClientRect();
-  const er=el.getBoundingClientRect();
-  const ew=er.width/wr.width;
-  const eh=er.height/wr.height;
-
-  const candidateX=[
-    {value:ew/2,guide:0,label:'frame-left'},
-    {value:0.5,guide:0.5,label:'frame-center'},
-    {value:1-ew/2,guide:1,label:'frame-right'}
-  ];
-  const candidateY=[
-    {value:eh/2,guide:0,label:'frame-top'},
-    {value:0.5,guide:0.5,label:'frame-center'},
-    {value:1-eh/2,guide:1,label:'frame-bottom'}
-  ];
-
-  // Other boxes: centers and matching edges.
-  wrap.querySelectorAll('.caption-editable').forEach(other=>{
-    if(other===el) return;
-    const r=other.getBoundingClientRect();
-    const cx=((r.left+r.width/2)-wr.left)/wr.width;
-    const cy=((r.top+r.height/2)-wr.top)/wr.height;
-    const l=(r.left-wr.left)/wr.width;
-    const rr=(r.right-wr.left)/wr.width;
-    const t=(r.top-wr.top)/wr.height;
-    const b=(r.bottom-wr.top)/wr.height;
-    candidateX.push({value:cx,guide:cx,label:'other-center'});
-    candidateX.push({value:l+ew/2,guide:l,label:'other-left'});
-    candidateX.push({value:rr-ew/2,guide:rr,label:'other-right'});
-    candidateY.push({value:cy,guide:cy,label:'other-center'});
-    candidateY.push({value:t+eh/2,guide:t,label:'other-top'});
-    candidateY.push({value:b-eh/2,guide:b,label:'other-bottom'});
-  });
-
-  let bestX=null,bestY=null;
-  for(const c of candidateX){
-    const d=Math.abs(x-c.value);
-    if(d<=SNAP && (!bestX || d<bestX.d)) bestX={...c,d};
-  }
-  for(const c of candidateY){
-    const d=Math.abs(y-c.value);
-    if(d<=SNAP && (!bestY || d<bestY.d)) bestY={...c,d};
-  }
-
-  showAlignmentGuides(
-    wrap,
-    bestX?[bestX.guide]:[],
-    bestY?[bestY.guide]:[]
+  el.addEventListener(
+    'pointerdown',
+    startDrag
   );
 
-  return {x:bestX?bestX.value:x,y:bestY?bestY.value:y};
+  el.addEventListener(
+    'pointermove',
+    moveDrag
+  );
+
+  el.addEventListener(
+    'pointerup',
+    finishDrag
+  );
+
+  el.addEventListener(
+    'pointercancel',
+    finishDrag
+  );
+
+  el.addEventListener(
+    'lostpointercapture',
+    ()=>{
+      if(dragging){
+        finishDrag();
+      }
+    }
+  );
+
+  // ----------------------------------------------------------
+  // FONT SIZE
+  // ----------------------------------------------------------
+
+  syncEditableFontSize(idx);
+
 }
 
 // ============================================================
@@ -3059,14 +3212,9 @@ function renderSlideCards(){
               </h4>
 
 
-              <div
-                class="line-text dialogue-editable"
-                data-idx="${idx}"
-                data-line="${lineIndex}"
-                contenteditable="true"
-                spellcheck="false"
-                title="Edit dialogue"
-              >${escapeHTML(line.text)}</div>
+              <div class="line-text">
+                "${escapeHTML(line.text)}"
+              </div>
 
 
               ${
@@ -3201,9 +3349,6 @@ function renderSlideCards(){
 
           <div class="slide-preview-wrap">
 
-            <div class="alignment-guide vertical"></div>
-            <div class="alignment-guide horizontal"></div>
-
             <canvas
               class="slideCanvas"
               data-idx="${idx}"
@@ -3220,8 +3365,8 @@ function renderSlideCards(){
           <div class="edit-hint">
 
             Click a caption to select it.
-            Drag to move it · double-click to edit text.
-            Arrow keys move the selected box · guides snap while dragging.
+            Drag the selected box to move it.
+            The image will stay still while moving.
 
           </div>
 
@@ -3260,50 +3405,6 @@ function renderSlideCards(){
         container
       );
 
-    });
-
-  // ==========================================================
-  // EDITABLE DIALOGUE TEXT
-  // ==========================================================
-
-  container
-    .querySelectorAll('.dialogue-editable')
-    .forEach(el=>{
-      const idx=parseInt(el.dataset.idx);
-      const lineIndex=parseInt(el.dataset.line);
-      let timer=null;
-
-      function syncDialogue(){
-        const raw=el.innerText.replace(/\n+$/,'');
-        slides[idx].lines[lineIndex].text=raw;
-
-        const text=escapeHTML(raw);
-        container.querySelectorAll(
-          `.caption-editable[data-idx="${idx}"][data-line="${lineIndex}"], .dialogue-editable[data-idx="${idx}"][data-line="${lineIndex}"]`
-        ).forEach(other=>{
-          if(other!==el) other.innerText=raw;
-        });
-
-        composeSlide(idx);
-      }
-
-      el.addEventListener('input',()=>{
-        clearTimeout(timer);
-        timer=setTimeout(syncDialogue,120);
-      });
-
-      el.addEventListener('blur',()=>{
-        clearTimeout(timer);
-        syncDialogue();
-      });
-
-      el.addEventListener('keydown',e=>{
-        if(e.key==='Enter'){
-          e.preventDefault();
-          syncDialogue();
-          el.blur();
-        }
-      });
     });
 
 
